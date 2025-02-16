@@ -44,6 +44,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -54,7 +55,6 @@ import androidx.compose.ui.unit.dp
 import com.example.tapgopay.MainActivity
 import com.example.tapgopay.R
 import com.example.tapgopay.ui.theme.TapGoPayTheme
-import com.example.tapgopay.ui.theme.onlineColor
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,10 +66,10 @@ fun HomeScreen() {
                 title = {
                     Text(
                         "Home",
-                        fontWeight = FontWeight.SemiBold,
+                        style = MaterialTheme.typography.titleLarge,
                     )
                 },
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 0.dp),
+                modifier = Modifier.padding(horizontal = 16.dp),
                 navigationIcon = {
                     IconButton(
                         onClick = {
@@ -116,48 +116,59 @@ fun HomeScreen() {
                 )
             }
 
-            Column {
-                CreditCard()
-
-                Row(
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                CreditCard(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 4.dp),
-                ) {
-                    ActionButton(
-                        onClick = {},
-                        text = "Details",
-                        iconId = R.drawable.credit_card_24dp,
-                        defaultElevation = 4.dp
-                    )
+                        .height(224.dp)
+                )
 
-                    ActionButton(
-                        onClick = {},
-                        text = "Transfer",
-                        iconId = R.drawable.arrow_upward_24dp,
-                        defaultElevation = 4.dp
-                    )
-
-                    ActionButton(
-                        onClick = {},
-                        text = "Limits",
-                        iconId = R.drawable.filter_alt_24dp,
-                        defaultElevation = 4.dp
-                    )
-
-                    ActionButton(
-                        onClick = {},
-                        text = "Freeze",
-                        iconId = R.drawable.mode_cool_24dp,
-                        defaultElevation = 4.dp
-                    )
-                }
+                CardActions()
             }
 
             Transactions()
         }
+    }
+}
+
+@Composable
+fun CardActions() {
+    Row(
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp),
+    ) {
+        ActionButton(
+            onClick = {},
+            text = "Details",
+            iconId = R.drawable.credit_card_24dp,
+            defaultElevation = 4.dp
+        )
+
+        ActionButton(
+            onClick = {},
+            text = "Transfer",
+            iconId = R.drawable.arrow_upward_24dp,
+            defaultElevation = 4.dp
+        )
+
+        ActionButton(
+            onClick = {},
+            text = "Limits",
+            iconId = R.drawable.filter_alt_24dp,
+            defaultElevation = 4.dp
+        )
+
+        ActionButton(
+            onClick = {},
+            text = "Freeze",
+            iconId = R.drawable.mode_cool_24dp,
+            defaultElevation = 4.dp
+        )
     }
 }
 
@@ -262,7 +273,7 @@ fun TransactionCard() {
             containerColor = MaterialTheme.colorScheme.surface,
         ),
         shape = RoundedCornerShape(12.dp),
-        modifier = Modifier.clickable {  }
+        modifier = Modifier.clickable { }
     ) {
         Row(
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -276,7 +287,10 @@ fun TransactionCard() {
                 Box(
                     modifier = Modifier
                         .size(52.dp)
-                        .background(color = MaterialTheme.colorScheme.surfaceContainer, shape = CircleShape),
+                        .background(
+                            color = MaterialTheme.colorScheme.surfaceContainer,
+                            shape = CircleShape
+                        ),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
@@ -325,7 +339,7 @@ fun ActionButton(
     ) {
         ElevatedButton(
             onClick = onClick,
-            modifier = Modifier.size(48.dp),
+            modifier = Modifier.size(44.dp),
             shape = CircleShape,
             contentPadding = PaddingValues(0.dp),
             colors = ButtonDefaults.elevatedButtonColors().copy(
@@ -339,6 +353,7 @@ fun ActionButton(
                 painter = painterResource(iconId),
                 contentDescription = null,
                 tint = Color.Gray,
+                modifier = Modifier.size(24.dp)
             )
         }
 
@@ -388,7 +403,7 @@ fun Menu() {
                         modifier = Modifier
                             .size(12.dp)
                             .background(
-                                onlineColor,
+                                MaterialTheme.colorScheme.tertiary,
                                 shape = CircleShape
                             )
                     ) {
@@ -431,7 +446,12 @@ fun MenuItem(
     trailingIcon: @Composable (() -> Unit)? = null,
 ) {
     DropdownMenuItem(
-        text = { Text(text) },
+        text = {
+            Text(
+                text,
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        },
         onClick = onClick,
         modifier = Modifier
             .padding(4.dp)
@@ -447,29 +467,30 @@ fun MenuItem(
 }
 
 @Composable
-fun CreditCard() {
+fun CreditCard(
+    modifier: Modifier,
+) {
     Card(
-        modifier = Modifier
-            .padding(vertical = 8.dp)
-            .fillMaxWidth()
-            .height(200.dp),
-        shape = RoundedCornerShape(8.dp),
+        modifier = modifier
+            .clickable {  },
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors().copy(
             containerColor = MaterialTheme.colorScheme.primary.copy(
                 alpha = 0.9F
             ),
             contentColor = MaterialTheme.colorScheme.onPrimary,
-        )
+        ),
     ) {
         Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
+            modifier = Modifier
+                .fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            // Card Status
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(vertical = 12.dp, horizontal = 24.dp),
+                    .weight(0.8f)
+                    .padding(horizontal = 24.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -492,46 +513,84 @@ fun CreditCard() {
                     )
                 }
 
-                TextButton(
-                    onClick = {},
-                    colors = ButtonDefaults.buttonColors().copy(
-                        containerColor = MaterialTheme.colorScheme.primary.copy(
-                            alpha = 0.1F
-                        ),
-                        contentColor = MaterialTheme.colorScheme.onPrimary,
-                    ),
-                ) {
-                    Text(
-                        "Physical Card",
-                        style = MaterialTheme.typography.labelLarge,
-                        modifier = Modifier.padding(horizontal = 8.dp),
-                    )
-                }
+                Text(
+                    "Physical Card",
+                    style = MaterialTheme.typography.labelLarge,
+                )
             }
 
-            //
-            Image(
-                painter = painterResource(R.drawable.chip),
-                contentDescription = null,
-                modifier = Modifier
-                    .padding(horizontal = 24.dp, vertical = 8.dp)
-                    .size(56.dp)
-            )
-
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(color = MaterialTheme.colorScheme.primary),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                    .weight(1f)
+                    .padding(horizontal = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                Column(
-                    modifier = Modifier
-                        .padding(horizontal = 24.dp)
-                        .fillMaxSize(),
-                    verticalArrangement = Arrangement.Center,
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text("**** **** 789")
-                    Text("EXP 30/12/2036")
+                    Icon(
+                        painter = painterResource(R.drawable.wifi_24dp),
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier
+                            .size(28.dp)
+                            .rotate(-90f)
+                    )
+
+                    Image(
+                        painter = painterResource(R.drawable.chip),
+                        contentDescription = null,
+                        modifier = Modifier.size(40.dp)
+                    )
+                }
+
+                Text(
+                    "1234 5678 9101 1213",
+                    style = MaterialTheme.typography.headlineSmall.copy(
+                        fontWeight = FontWeight.SemiBold
+                    ),
+                )
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(0.8f)
+                    .background(color = MaterialTheme.colorScheme.primary),
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 24.dp, vertical = 12.dp),
+                    horizontalArrangement = Arrangement.spacedBy(24.dp)
+                ) {
+                    Column(
+                        verticalArrangement = Arrangement.Center,
+                    ) {
+                        Text(
+                            "Account Holder",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            "John Doe",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+
+                    Column(
+                        verticalArrangement = Arrangement.Center,
+                    ) {
+                        Text(
+                            "Expires",
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                        Text(
+                            "xx/xx",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
                 }
             }
         }
