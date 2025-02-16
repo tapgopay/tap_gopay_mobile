@@ -36,7 +36,7 @@ class MainActivity : ComponentActivity() {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     NavHost(
                         navController = navController,
-                        startDestination = Routes.RegisterScreen.name,
+                        startDestination = Routes.HomeScreen.name,
                         modifier = Modifier.padding(innerPadding),
                     ) {
                         composable(route = Routes.LoginScreen.name) {
