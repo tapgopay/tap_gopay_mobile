@@ -4,4 +4,5 @@ enum class Routes {
     LoginScreen,
     RegisterScreen,
     HomeScreen,
+    ProfileScreen,
 }

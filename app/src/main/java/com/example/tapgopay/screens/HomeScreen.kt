@@ -1,6 +1,7 @@
 package com.example.tapgopay.screens
 
 import android.util.Log
+import android.widget.Toast
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -34,18 +35,22 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
@@ -55,10 +60,13 @@ import androidx.compose.ui.unit.dp
 import com.example.tapgopay.MainActivity
 import com.example.tapgopay.R
 import com.example.tapgopay.ui.theme.TapGoPayTheme
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen() {
+fun HomeScreen(
+    navigateTo: (route: Routes) -> Unit,
+) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
@@ -73,7 +81,7 @@ fun HomeScreen() {
                 navigationIcon = {
                     IconButton(
                         onClick = {
-                            Log.d(MainActivity.TAG, "Navigating to UserProfile page")
+                            navigateTo(Routes.ProfileScreen)
                         },
                         modifier = Modifier.size(24.dp),
                     ) {
@@ -84,7 +92,9 @@ fun HomeScreen() {
                     }
                 },
                 actions = {
-                    Menu()
+                    Menu(
+                        navigateTo = navigateTo
+                    )
                 }
             )
         },
@@ -95,27 +105,11 @@ fun HomeScreen() {
         Column(
             modifier = Modifier
                 .padding(innerPadding)
-                .padding(horizontal = 24.dp)
+                .padding(horizontal = 20.dp)
                 .fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(8.dp),
             horizontalAlignment = Alignment.Start,
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Text(
-                    "€ 6,815.53",
-                    style = MaterialTheme.typography.displaySmall.copy(
-                        fontWeight = FontWeight.SemiBold,
-                    ),
-                )
-                Text(
-                    "Current Balance",
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-            }
-
             Column(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
@@ -128,13 +122,45 @@ fun HomeScreen() {
                 CardActions()
             }
 
-            Transactions()
+            var showBottomSheet by remember { mutableStateOf(false) }
+            val sheetState = rememberModalBottomSheetState()
+            val scope = rememberCoroutineScope()
+
+            Transactions(
+                showMore = {
+                    showBottomSheet = true
+                    scope.launch {
+                        Log.d(MainActivity.TAG, "Expanding bottom sheet")
+                        sheetState.expand()
+                    }
+                }
+            )
+
+            if(showBottomSheet) {
+                ModalBottomSheet(
+                    onDismissRequest = {
+                        showBottomSheet = false
+                    },
+                    sheetState = sheetState,
+                    shape = RoundedCornerShape(0.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 24.dp)
+                    ) {
+                        Transactions()
+                    }
+                }
+            }
         }
     }
 }
 
 @Composable
 fun CardActions() {
+    val context = LocalContext.current
+
     Row(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
@@ -143,28 +169,40 @@ fun CardActions() {
             .padding(horizontal = 12.dp),
     ) {
         ActionButton(
-            onClick = {},
+            onClick = {
+                Toast.makeText(context, "Not Yet Implemented", Toast.LENGTH_LONG)
+                    .show()
+            },
             text = "Details",
             iconId = R.drawable.credit_card_24dp,
             defaultElevation = 4.dp
         )
 
         ActionButton(
-            onClick = {},
+            onClick = {
+                Toast.makeText(context, "Not Yet Implemented", Toast.LENGTH_LONG)
+                    .show()
+            },
             text = "Transfer",
             iconId = R.drawable.arrow_upward_24dp,
             defaultElevation = 4.dp
         )
 
         ActionButton(
-            onClick = {},
+            onClick = {
+                Toast.makeText(context, "Not Yet Implemented", Toast.LENGTH_LONG)
+                    .show()
+            },
             text = "Limits",
             iconId = R.drawable.filter_alt_24dp,
             defaultElevation = 4.dp
         )
 
         ActionButton(
-            onClick = {},
+            onClick = {
+                Toast.makeText(context, "Not Yet Implemented", Toast.LENGTH_LONG)
+                    .show()
+            },
             text = "Freeze",
             iconId = R.drawable.mode_cool_24dp,
             defaultElevation = 4.dp
@@ -223,9 +261,12 @@ fun BottomAppBar() {
 }
 
 @Composable
-fun Transactions() {
+fun Transactions(
+    showMore: (() -> Unit)? = null,
+) {
     Column(
-        modifier = Modifier.padding(top = 12.dp)
+        modifier = Modifier
+            .fillMaxSize()
     ) {
         Row(
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -239,17 +280,22 @@ fun Transactions() {
                 ),
             )
 
-            TextButton(
-                onClick = {}
-            ) {
-                Text(
-                    "View All",
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        fontWeight = FontWeight.SemiBold,
-                    ),
-                    textDecoration = TextDecoration.Underline,
-                )
+            showMore?.let {
+                TextButton(
+                    onClick = {
+                        showMore()
+                    },
+                ) {
+                    Text(
+                        "View All",
+                        style = MaterialTheme.typography.bodyLarge.copy(
+                            fontWeight = FontWeight.SemiBold,
+                        ),
+                        textDecoration = TextDecoration.Underline,
+                    )
+                }
             }
+
         }
 
         val scrollState = rememberScrollState()
@@ -260,8 +306,9 @@ fun Transactions() {
                 .fillMaxHeight()
                 .verticalScroll(scrollState)
         ) {
-            TransactionCard()
-            TransactionCard()
+            repeat(9) {
+                TransactionCard()
+            }
         }
     }
 }
@@ -365,8 +412,11 @@ fun ActionButton(
 }
 
 @Composable
-fun Menu() {
+fun Menu(
+    navigateTo: (route: Routes) -> Unit,
+) {
     var expanded by remember { mutableStateOf(false) }
+    val context = LocalContext.current
 
     Column {
         IconButton(
@@ -388,6 +438,7 @@ fun Menu() {
                 text = "View Profile",
                 onClick = {
                     expanded = false
+                    navigateTo(Routes.ProfileScreen)
                 },
                 leadingIconId = R.drawable.person_24dp
             )
@@ -396,6 +447,8 @@ fun Menu() {
                 text = "Messages",
                 onClick = {
                     expanded = false
+                    Toast.makeText(context, "Not Yet Implemented", Toast.LENGTH_LONG)
+                        .show()
                 },
                 leadingIconId = R.drawable.inbox_24dp,
                 trailingIcon = {
@@ -421,6 +474,8 @@ fun Menu() {
                 text = "Account Settings",
                 onClick = {
                     expanded = false
+                    Toast.makeText(context, "Not Yet Implemented", Toast.LENGTH_LONG)
+                        .show()
                 },
                 leadingIconId = R.drawable.settings_24dp
             )
@@ -431,6 +486,8 @@ fun Menu() {
                 text = "Logout",
                 onClick = {
                     expanded = false
+                    Toast.makeText(context, "Not Yet Implemented", Toast.LENGTH_LONG)
+                        .show()
                 },
                 leadingIconId = R.drawable.logout_24dp
             )
@@ -470,138 +527,171 @@ fun MenuItem(
 fun CreditCard(
     modifier: Modifier,
 ) {
-    Card(
-        modifier = modifier
-            .clickable {  },
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors().copy(
-            containerColor = MaterialTheme.colorScheme.primary.copy(
-                alpha = 0.9F
+    Column {
+        Card(
+            modifier = modifier
+                .clickable { },
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors().copy(
+                containerColor = MaterialTheme.colorScheme.primary.copy(
+                    alpha = 0.9F
+                ),
+                contentColor = MaterialTheme.colorScheme.onPrimary,
             ),
-            contentColor = MaterialTheme.colorScheme.onPrimary,
-        ),
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
-            Row(
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(0.8f)
-                    .padding(horizontal = 24.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
+                    .fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(0.8f)
+                        .padding(horizontal = 24.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(12.dp)
-                            .background(
-                                MaterialTheme.colorScheme.inversePrimary,
-                                shape = CircleShape
-                            )
-                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(12.dp)
+                                .background(
+                                    MaterialTheme.colorScheme.inversePrimary,
+                                    shape = CircleShape
+                                )
+                        )
+
+                        Text(
+                            "Active",
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                    }
 
                     Text(
-                        "Active",
+                        "Physical Card",
                         style = MaterialTheme.typography.labelLarge,
                     )
                 }
 
-                Text(
-                    "Physical Card",
-                    style = MaterialTheme.typography.labelLarge,
-                )
-            }
-
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f)
-                    .padding(horizontal = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(4.dp),
-            ) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Icon(
-                        painter = painterResource(R.drawable.wifi_24dp),
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier
-                            .size(28.dp)
-                            .rotate(-90f)
-                    )
-
-                    Image(
-                        painter = painterResource(R.drawable.chip),
-                        contentDescription = null,
-                        modifier = Modifier.size(40.dp)
-                    )
-                }
-
-                Text(
-                    "1234 5678 9101 1213",
-                    style = MaterialTheme.typography.headlineSmall.copy(
-                        fontWeight = FontWeight.SemiBold
-                    ),
-                )
-            }
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(0.8f)
-                    .background(color = MaterialTheme.colorScheme.primary),
-            ) {
-                Row(
+                Column(
                     modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 24.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.spacedBy(24.dp)
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .padding(horizontal = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    Column(
-                        verticalArrangement = Arrangement.Center,
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
-                        Text(
-                            "Account Holder",
-                            style = MaterialTheme.typography.bodyMedium
+                        Icon(
+                            painter = painterResource(R.drawable.wifi_24dp),
+                            contentDescription = null,
+                            tint = Color.White,
+                            modifier = Modifier
+                                .size(28.dp)
+                                .rotate(-90f)
                         )
-                        Text(
-                            "John Doe",
-                            style = MaterialTheme.typography.bodyLarge
+
+                        Image(
+                            painter = painterResource(R.drawable.chip),
+                            contentDescription = null,
+                            modifier = Modifier.size(40.dp)
                         )
                     }
 
-                    Column(
-                        verticalArrangement = Arrangement.Center,
+                    Text(
+                        "1234 5678 9101 1213",
+                        style = MaterialTheme.typography.headlineSmall.copy(
+                            fontWeight = FontWeight.SemiBold
+                        ),
+                    )
+                }
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(0.8f)
+                        .background(color = MaterialTheme.colorScheme.primary),
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(horizontal = 24.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(24.dp)
                     ) {
-                        Text(
-                            "Expires",
-                            style = MaterialTheme.typography.bodyMedium
-                        )
-                        Text(
-                            "xx/xx",
-                            style = MaterialTheme.typography.bodyLarge
-                        )
+                        Column(
+                            verticalArrangement = Arrangement.Center,
+                        ) {
+                            Text(
+                                "Account Holder",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                "John Doe",
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
+
+                        Column(
+                            verticalArrangement = Arrangement.Center,
+                        ) {
+                            Text(
+                                "Expires",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                "xx/xx",
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+                        }
                     }
                 }
             }
         }
+
+        // Balance
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 36.dp)
+                .background(
+                    color = MaterialTheme.colorScheme.onPrimary,
+                    shape = RoundedCornerShape(4.dp),
+                ),
+            horizontalArrangement = Arrangement.SpaceBetween,
+        ) {
+            Text(
+                "Balance",
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontWeight = FontWeight.SemiBold,
+                ),
+                modifier = Modifier.padding(12.dp)
+            )
+
+            Text(
+                "€ 4,594",
+                style = MaterialTheme.typography.bodyLarge.copy(
+                    fontWeight = FontWeight.Bold,
+                ),
+                modifier = Modifier.padding(12.dp)
+            )
+        }
     }
+
 }
 
 @Preview(showBackground = true, widthDp = 411, heightDp = 891)
 @Composable
 fun PreviewHomeScreen() {
     TapGoPayTheme {
-        HomeScreen()
+        HomeScreen(
+            navigateTo = {}
+        )
     }
 }
 

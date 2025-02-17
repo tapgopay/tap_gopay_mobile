@@ -14,6 +14,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.tapgopay.data.NetworkMonitor
 import com.example.tapgopay.screens.HomeScreen
 import com.example.tapgopay.screens.LoginScreen
+import com.example.tapgopay.screens.ProfileScreen
 import com.example.tapgopay.screens.RegisterScreen
 import com.example.tapgopay.screens.Routes
 import com.example.tapgopay.ui.theme.TapGoPayTheme
@@ -61,9 +62,20 @@ class MainActivity : ComponentActivity() {
                         }
 
                         composable(route = Routes.HomeScreen.name) {
-                            HomeScreen()
+                            HomeScreen(
+                                navigateTo = { route ->
+                                    navController.navigate(route = route.name)
+                                }
+                            )
                         }
 
+                        composable(route = Routes.ProfileScreen.name) {
+                            ProfileScreen(
+                                navigateToHomeScreen = {
+                                    navController.navigate(route= Routes.HomeScreen.name)
+                                }
+                            )
+                        }
                     }
                 }
             }

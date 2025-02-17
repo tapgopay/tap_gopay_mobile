@@ -39,7 +39,9 @@ import java.time.format.FormatStyle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProfileScreen() {
+fun ProfileScreen(
+    navigateToHomeScreen: () -> Unit,
+) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
@@ -49,7 +51,7 @@ fun ProfileScreen() {
                 },
                 navigationIcon = {
                     IconButton(
-                        onClick = {}
+                        onClick = navigateToHomeScreen
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.baseline_arrow_back_24),
@@ -65,7 +67,7 @@ fun ProfileScreen() {
                 .fillMaxSize()
                 .padding(innerPadding)
                 .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Box(
                 modifier = Modifier
@@ -210,6 +212,8 @@ fun SettingsItem(
 @Composable
 fun PreviewProfileScreen() {
     TapGoPayTheme {
-        ProfileScreen()
+        ProfileScreen(
+            navigateToHomeScreen = {}
+        )
     }
 }
