@@ -1,7 +1,5 @@
 package com.example.tapgopay.screens
 
-import android.util.Log
-import android.widget.Toast
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -12,33 +10,25 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -50,15 +40,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.example.tapgopay.MainActivity
 import com.example.tapgopay.R
+import com.example.tapgopay.screens.widgets.Menu
+import com.example.tapgopay.screens.widgets.Transactions
 import com.example.tapgopay.ui.theme.TapGoPayTheme
 import kotlinx.coroutines.launch
 
@@ -67,6 +56,11 @@ import kotlinx.coroutines.launch
 fun HomeScreen(
     navigateTo: (route: Routes) -> Unit,
 ) {
+    val transactionsSheetState = rememberModalBottomSheetState()
+    var viewAllTransactions by remember { mutableStateOf(false) }
+
+    val scope = rememberCoroutineScope()
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
@@ -86,7 +80,7 @@ fun HomeScreen(
                         modifier = Modifier.size(24.dp),
                     ) {
                         Image(
-                            painter = painterResource(R.drawable.avatar_thinking),
+                            painter = painterResource(R.drawable.person_add_24dp),
                             contentDescription = "User Profile",
                         )
                     }
@@ -99,7 +93,19 @@ fun HomeScreen(
             )
         },
         bottomBar = {
-            BottomAppBar()
+            BottomAppBar(
+                navigateHome = {
+                    navigateTo(Routes.HomeScreen)
+                },
+                viewTransactions = {
+                    viewAllTransactions = true
+                    scope.launch {
+                        transactionsSheetState.expand()
+                    }
+                },
+                viewReports = {},
+                manageAccount = {},
+            )
         }
     ) { innerPadding ->
         Column(
@@ -119,35 +125,27 @@ fun HomeScreen(
                         .height(224.dp)
                 )
 
-                CardActions()
+                CardActions(
+                    onDetailsBtnClicked = {},
+                    onTransferBtnClicked = {},
+                    onLimitsBtnClicked = {},
+                    onFreezeBtnClicked = {},
+                )
             }
 
-            var showBottomSheet by remember { mutableStateOf(false) }
-            val sheetState = rememberModalBottomSheetState()
-            val scope = rememberCoroutineScope()
+            Transactions()
 
-            Transactions(
-                showMore = {
-                    showBottomSheet = true
-                    scope.launch {
-                        Log.d(MainActivity.TAG, "Expanding bottom sheet")
-                        sheetState.expand()
-                    }
-                }
-            )
-
-            if(showBottomSheet) {
+            if(viewAllTransactions) {
                 ModalBottomSheet(
                     onDismissRequest = {
-                        showBottomSheet = false
+                        viewAllTransactions = false
                     },
-                    sheetState = sheetState,
-                    shape = RoundedCornerShape(0.dp)
+                    sheetState = transactionsSheetState,
+                    shape = RoundedCornerShape(12.dp)
                 ) {
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(horizontal = 24.dp)
                     ) {
                         Transactions()
                     }
@@ -158,9 +156,12 @@ fun HomeScreen(
 }
 
 @Composable
-fun CardActions() {
-    val context = LocalContext.current
-
+fun CardActions(
+    onDetailsBtnClicked: () -> Unit,
+    onTransferBtnClicked: () -> Unit,
+    onLimitsBtnClicked: () -> Unit,
+    onFreezeBtnClicked: () -> Unit,
+) {
     Row(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
@@ -169,40 +170,28 @@ fun CardActions() {
             .padding(horizontal = 12.dp),
     ) {
         ActionButton(
-            onClick = {
-                Toast.makeText(context, "Not Yet Implemented", Toast.LENGTH_LONG)
-                    .show()
-            },
+            onClick = onDetailsBtnClicked,
             text = "Details",
             iconId = R.drawable.credit_card_24dp,
             defaultElevation = 4.dp
         )
 
         ActionButton(
-            onClick = {
-                Toast.makeText(context, "Not Yet Implemented", Toast.LENGTH_LONG)
-                    .show()
-            },
+            onClick = onTransferBtnClicked,
             text = "Transfer",
             iconId = R.drawable.arrow_upward_24dp,
             defaultElevation = 4.dp
         )
 
         ActionButton(
-            onClick = {
-                Toast.makeText(context, "Not Yet Implemented", Toast.LENGTH_LONG)
-                    .show()
-            },
+            onClick = onLimitsBtnClicked,
             text = "Limits",
             iconId = R.drawable.filter_alt_24dp,
             defaultElevation = 4.dp
         )
 
         ActionButton(
-            onClick = {
-                Toast.makeText(context, "Not Yet Implemented", Toast.LENGTH_LONG)
-                    .show()
-            },
+            onClick = onFreezeBtnClicked,
             text = "Freeze",
             iconId = R.drawable.mode_cool_24dp,
             defaultElevation = 4.dp
@@ -211,11 +200,15 @@ fun CardActions() {
 }
 
 @Composable
-fun BottomAppBar() {
+fun BottomAppBar(
+    navigateHome: () -> Unit,
+    viewTransactions: () -> Unit,
+    viewReports: () -> Unit,
+    manageAccount: () -> Unit,
+) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White)
     ) {
         // Top Border
         Box(
@@ -233,143 +226,31 @@ fun BottomAppBar() {
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
             ActionButton(
-                onClick = {},
+                onClick = navigateHome,
                 text = "Home",
                 iconId = R.drawable.home_24dp,
             )
 
             ActionButton(
-                onClick = {},
+                onClick = viewTransactions,
                 text = "Transactions",
                 iconId = R.drawable.credit_card_24dp,
             )
 
             ActionButton(
-                onClick = {},
+                onClick = viewReports,
                 text = "Reports",
                 iconId = R.drawable.bar_chart_24dp,
             )
 
             ActionButton(
-                onClick = {},
+                onClick = manageAccount,
                 text = "Manage",
                 iconId = R.drawable.widgets_24dp,
             )
         }
     }
 
-}
-
-@Composable
-fun Transactions(
-    showMore: (() -> Unit)? = null,
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-    ) {
-        Row(
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.fillMaxWidth(),
-        ) {
-            Text(
-                "Transactions",
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = FontWeight.SemiBold,
-                ),
-            )
-
-            showMore?.let {
-                TextButton(
-                    onClick = {
-                        showMore()
-                    },
-                ) {
-                    Text(
-                        "View All",
-                        style = MaterialTheme.typography.bodyLarge.copy(
-                            fontWeight = FontWeight.SemiBold,
-                        ),
-                        textDecoration = TextDecoration.Underline,
-                    )
-                }
-            }
-
-        }
-
-        val scrollState = rememberScrollState()
-
-        Column(
-            modifier = Modifier
-                .padding(vertical = 4.dp)
-                .fillMaxHeight()
-                .verticalScroll(scrollState)
-        ) {
-            repeat(9) {
-                TransactionCard()
-            }
-        }
-    }
-}
-
-@Composable
-fun TransactionCard() {
-    Card(
-        colors = CardDefaults.cardColors().copy(
-            containerColor = MaterialTheme.colorScheme.surface,
-        ),
-        shape = RoundedCornerShape(12.dp),
-        modifier = Modifier.clickable { }
-    ) {
-        Row(
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Top,
-            modifier = Modifier.padding(12.dp)
-        ) {
-            Row(
-                modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(52.dp)
-                        .background(
-                            color = MaterialTheme.colorScheme.surfaceContainer,
-                            shape = CircleShape
-                        ),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        "J",
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.SemiBold,
-                        ),
-                    )
-                }
-
-                Column {
-                    Text(
-                        "From James",
-                        style = MaterialTheme.typography.bodyLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                        ),
-                    )
-                    Text(
-                        "Income - July 1st 2024, 12:32",
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
-                }
-            }
-
-            Text(
-                "+ € 24.00",
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    fontWeight = FontWeight.Bold
-                ),
-            )
-        }
-    }
 }
 
 @Composable
@@ -411,117 +292,6 @@ fun ActionButton(
     }
 }
 
-@Composable
-fun Menu(
-    navigateTo: (route: Routes) -> Unit,
-) {
-    var expanded by remember { mutableStateOf(false) }
-    val context = LocalContext.current
-
-    Column {
-        IconButton(
-            onClick = {
-                expanded = !expanded
-            }
-        ) {
-            Icon(
-                painter = painterResource(R.drawable.menu_24dp),
-                contentDescription = "Menu"
-            )
-        }
-
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false }
-        ) {
-            MenuItem(
-                text = "View Profile",
-                onClick = {
-                    expanded = false
-                    navigateTo(Routes.ProfileScreen)
-                },
-                leadingIconId = R.drawable.person_24dp
-            )
-
-            MenuItem(
-                text = "Messages",
-                onClick = {
-                    expanded = false
-                    Toast.makeText(context, "Not Yet Implemented", Toast.LENGTH_LONG)
-                        .show()
-                },
-                leadingIconId = R.drawable.inbox_24dp,
-                trailingIcon = {
-                    Box(
-                        modifier = Modifier
-                            .size(12.dp)
-                            .background(
-                                MaterialTheme.colorScheme.tertiary,
-                                shape = CircleShape
-                            )
-                    ) {
-                        Text(
-                            "2",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            modifier = Modifier.padding(8.dp)
-                        )
-                    }
-                }
-            )
-
-            MenuItem(
-                text = "Account Settings",
-                onClick = {
-                    expanded = false
-                    Toast.makeText(context, "Not Yet Implemented", Toast.LENGTH_LONG)
-                        .show()
-                },
-                leadingIconId = R.drawable.settings_24dp
-            )
-
-            HorizontalDivider()
-
-            MenuItem(
-                text = "Logout",
-                onClick = {
-                    expanded = false
-                    Toast.makeText(context, "Not Yet Implemented", Toast.LENGTH_LONG)
-                        .show()
-                },
-                leadingIconId = R.drawable.logout_24dp
-            )
-        }
-    }
-}
-
-@Composable
-fun MenuItem(
-    text: String,
-    onClick: () -> Unit,
-    @DrawableRes leadingIconId: Int,
-    trailingIcon: @Composable (() -> Unit)? = null,
-) {
-    DropdownMenuItem(
-        text = {
-            Text(
-                text,
-                style = MaterialTheme.typography.bodyMedium,
-            )
-        },
-        onClick = onClick,
-        modifier = Modifier
-            .padding(4.dp)
-            .width(172.dp),
-        leadingIcon = {
-            Icon(
-                painter = painterResource(leadingIconId),
-                contentDescription = null
-            )
-        },
-        trailingIcon = trailingIcon
-    )
-}
 
 @Composable
 fun CreditCard(
@@ -531,7 +301,7 @@ fun CreditCard(
         Card(
             modifier = modifier
                 .clickable { },
-            shape = RoundedCornerShape(24.dp),
+            shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors().copy(
                 containerColor = MaterialTheme.colorScheme.primary.copy(
                     alpha = 0.9F

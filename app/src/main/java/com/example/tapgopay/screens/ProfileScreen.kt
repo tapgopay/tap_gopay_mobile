@@ -97,8 +97,8 @@ fun ProfileScreen(
                             .clickable { },
                         contentAlignment = Alignment.BottomEnd,
                     ) {
-                        Image(
-                            painter = painterResource(R.drawable.avatar_thinking),
+                        Icon(
+                            painter = painterResource(R.drawable.person_add_24dp),
                             contentDescription = "Profile Picture",
                             modifier = Modifier.padding(4.dp)
                         )

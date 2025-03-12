@@ -1,23 +1,30 @@
 package com.example.tapgopay.ui.theme
 
 import androidx.compose.material3.Typography
-import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.text.font.FontWeight
+
+import androidx.compose.ui.text.googlefonts.GoogleFont
+import androidx.compose.ui.text.googlefonts.Font
 import com.example.tapgopay.R
 
-val displayFontFamily = FontFamily(
-    Font(R.font.notosans_regular, FontWeight.Normal),
-    Font(R.font.notosans_medium, FontWeight.Medium),
-    Font(R.font.notosans_semibold, FontWeight.SemiBold),
-    Font(R.font.notosans_bold, FontWeight.Bold),
+val provider = GoogleFont.Provider(
+    providerAuthority = "com.google.android.gms.fonts",
+    providerPackage = "com.google.android.gms",
+    certificates = R.array.com_google_android_gms_fonts_certs
 )
 
 val bodyFontFamily = FontFamily(
-    Font(R.font.notosansadlam_regular, FontWeight.Normal),
-    Font(R.font.notosansadlam_medium, FontWeight.Medium),
-    Font(R.font.notosansadlam_semibold, FontWeight.SemiBold),
-    Font(R.font.notosansadlam_bold, FontWeight.Bold),
+    Font(
+        googleFont = GoogleFont("Nunito Sans"),
+        fontProvider = provider,
+    )
+)
+
+val displayFontFamily = FontFamily(
+    Font(
+        googleFont = GoogleFont("Lato"),
+        fontProvider = provider,
+    )
 )
 
 // Default Material 3 typography values
