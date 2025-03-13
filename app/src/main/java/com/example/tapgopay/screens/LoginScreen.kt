@@ -8,7 +8,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.MaterialTheme
@@ -26,13 +26,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.tapgopay.MainActivity
 import com.example.tapgopay.R
@@ -71,7 +69,7 @@ fun LoginScreen(
                 .fillMaxSize()
                 .padding(innerPadding),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceEvenly
+            verticalArrangement = Arrangement.SpaceAround,
         ) {
             Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -79,14 +77,12 @@ fun LoginScreen(
             ) {
                 Text(
                     text = "Login",
-                    style = TextStyle(
-                        fontSize = 32.sp,
-                        fontWeight = FontWeight.SemiBold,
-                    )
+                    style = MaterialTheme.typography.displaySmall,
                 )
+
                 Text(
                     text = "Welcome Back!",
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MaterialTheme.typography.headlineSmall,
                 )
             }
 
@@ -108,54 +104,53 @@ fun LoginForm(
     authViewModel: AuthViewModel = viewModel(),
 ) {
     val context = LocalContext.current
+    var authError by remember { mutableStateOf<AuthError?>(null) }
+    val authState by authViewModel.authState.collectAsState()
+
+    // Runs when authState changes
+    LaunchedEffect(authState) {
+        if (authState == AuthState.Success) {
+            val message = "Login successful. Redirecting to Home Page"
+            Log.d(MainActivity.TAG, message)
+
+            Toast.makeText(context, message, Toast.LENGTH_LONG)
+                .show()
+
+            // Delay for a few seconds for user to read Toast message
+            delay(1000)
+            navigateToHomePage()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        authViewModel.authErrors.collectLatest { error ->
+            authError = error
+
+            launch {
+                delay(5000)  // Hide after n seconds
+                authError = null
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        authViewModel.connectionErrors.collect { error ->
+            Toast.makeText(context, error.errMessage.titlecase(), Toast.LENGTH_LONG)
+                .show()
+        }
+    }
+
+    authError?.let {
+        ErrorMessage(it.errMessage.titlecase())
+    }
 
     Column(
         modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.Center,
     ) {
-        var authError by remember { mutableStateOf<AuthError?>(null) }
-        val authState by authViewModel.authState.collectAsState()
-
-        // Runs when authState changes
-        LaunchedEffect(authState) {
-            if (authState == AuthState.Success) {
-                val message = "Login successful. Redirecting to Home Page"
-                Log.d(MainActivity.TAG, message)
-
-                Toast.makeText(context, message, Toast.LENGTH_LONG)
-                    .show()
-
-                // Delay for a few seconds for user to read Toast message
-                delay(1000)
-                navigateToHomePage()
-            }
-        }
-
-        LaunchedEffect(Unit) {
-            authViewModel.authErrors.collectLatest { error ->
-                authError = error
-
-                launch {
-                    delay(5000)  // Hide after n seconds
-                    authError = null
-                }
-            }
-        }
-
-        LaunchedEffect(Unit) {
-            authViewModel.connectionErrors.collect { error ->
-                Toast.makeText(context, error.errMessage.titlecase(), Toast.LENGTH_LONG)
-                    .show()
-            }
-        }
-
-        authError?.let {
-            ErrorMessage(it.errMessage.titlecase())
-        }
-
         InputField(
-            labelText = "Email Address",
+            labelText = "Email",
             value = authViewModel.email,
             onValueChanged = { newValue ->
                 authViewModel.email = newValue
@@ -175,6 +170,7 @@ fun LoginForm(
 
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(horizontal = 8.dp),
         ) {
             val containerColor = if (isConnected) {
                 MaterialTheme.colorScheme.primary
@@ -207,7 +203,7 @@ fun LoginForm(
                     containerColor = containerColor,
                     contentColor = contentColor,
                 ),
-                shape = CircleShape
+                shape = RoundedCornerShape(8.dp),
             ) {
                 Text(
                     text = "Login",

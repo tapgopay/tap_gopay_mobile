@@ -17,7 +17,7 @@ import java.io.IOException
 sealed class AuthError {
     abstract val errMessage: String
 
-    data class FieldError(val fieldName: String, override val errMessage: String) : AuthError()
+    data class ValidationError(val fieldName: String, override val errMessage: String) : AuthError()
     data class ConnectionError(
         override val errMessage: String = "Server currently unavailable. Please try again later"
     ) : AuthError()
@@ -119,7 +119,7 @@ class AuthViewModel : ViewModel() {
 
             if (!agreedToTerms) {
                 add(
-                    AuthError.FieldError(
+                    AuthError.ValidationError(
                         "terms", "You must agree to terms and conditions before continuing"
                     )
                 )
@@ -179,12 +179,12 @@ class AuthViewModel : ViewModel() {
 
     private fun validateEmail(email: String): AuthError? {
         if (email.isEmpty()) {
-            return AuthError.FieldError("email", "Email cannot be empty")
+            return AuthError.ValidationError("email", "Email cannot be empty")
         }
 
         val emailRegex = Regex("[\\w-.]+@([\\w-]+\\.)+[\\w-]{2,4}")
         if (!emailRegex.matches(email)) {
-            return AuthError.FieldError("email", "Invalid email format")
+            return AuthError.ValidationError("email", "Invalid email format")
 
         }
         return null
@@ -192,7 +192,7 @@ class AuthViewModel : ViewModel() {
 
     private fun validatePassword(password: String): AuthError? {
         if (password.length < MIN_PASSWORD_LENGTH) {
-            return AuthError.FieldError(
+            return AuthError.ValidationError(
                 "password", "Password cannot be less than $MIN_PASSWORD_LENGTH characters long"
             )
         }
@@ -203,7 +203,7 @@ class AuthViewModel : ViewModel() {
 
     private fun validateUsername(username: String): AuthError? {
         if (username.length < MIN_NAME_LENGTH) {
-            return AuthError.FieldError(
+            return AuthError.ValidationError(
                 "username",
                 "Username too short. Minimum of $MIN_NAME_LENGTH characters acceptable"
             )

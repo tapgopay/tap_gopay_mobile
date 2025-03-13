@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ElevatedButton
@@ -70,21 +71,20 @@ fun RegisterScreen(
                 .fillMaxSize()
                 .padding(innerPadding),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceEvenly
+            verticalArrangement = Arrangement.SpaceAround,
         ) {
             Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
-                    text = "Create An Account", style = TextStyle(
-                        fontSize = 32.sp,
-                        fontWeight = FontWeight.SemiBold,
-                    )
+                    text = "Create An Account",
+                    style = MaterialTheme.typography.displaySmall,
                 )
+
                 Text(
-                    text = "Join TapGoPay  today.",
-                    style = MaterialTheme.typography.bodyLarge,
+                    text = "Join TapGoPay today.",
+                    style = MaterialTheme.typography.headlineSmall,
                 )
             }
 
@@ -104,52 +104,51 @@ fun RegisterForm(
     authViewModel: AuthViewModel = viewModel()
 ) {
     val context = LocalContext.current
+    var authError by remember { mutableStateOf<AuthError?>(null) }
+    val authState by authViewModel.authState.collectAsState()
+
+    // Runs when authState changes
+    LaunchedEffect(authState) {
+        if (authState == AuthState.Success) {
+            val message = "Registration successful. Redirecting to Login Page"
+            Log.d(MainActivity.TAG, message)
+
+            Toast.makeText(context, message, Toast.LENGTH_LONG)
+                .show()
+
+            // Delay for a few seconds for user to read Toast message
+            delay(1000)
+            navigateToLogin()
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        authViewModel.authErrors.collect { error ->
+            authError = error
+
+            launch {
+                delay(5000)  // Hide after n seconds
+                authError = null
+            }
+        }
+    }
+
+    LaunchedEffect(Unit) {
+        authViewModel.connectionErrors.collect { error ->
+            Toast.makeText(context, error.errMessage.titlecase(), Toast.LENGTH_LONG)
+                .show()
+        }
+    }
+
+    authError?.let {
+        ErrorMessage(it.errMessage.titlecase())
+    }
 
     Column(
         modifier = modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.Start,
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.Center,
     ) {
-        var authError by remember { mutableStateOf<AuthError?>(null) }
-        val authState by authViewModel.authState.collectAsState()
-
-        // Runs when authState changes
-        LaunchedEffect(authState) {
-            if (authState == AuthState.Success) {
-                val message = "Registration successful. Redirecting to Login Page"
-                Log.d(MainActivity.TAG, message)
-
-                Toast.makeText(context, message, Toast.LENGTH_LONG)
-                    .show()
-
-                // Delay for a few seconds for user to read Toast message
-                delay(1000)
-                navigateToLogin()
-            }
-        }
-
-        LaunchedEffect(Unit) {
-            authViewModel.authErrors.collect { error ->
-                authError = error
-
-                launch {
-                    delay(5000)  // Hide after n seconds
-                    authError = null
-                }
-            }
-        }
-
-        LaunchedEffect(Unit) {
-            authViewModel.connectionErrors.collect { error ->
-                Toast.makeText(context, error.errMessage.titlecase(), Toast.LENGTH_LONG)
-                    .show()
-            }
-        }
-
-        authError?.let {
-            ErrorMessage(it.errMessage.titlecase())
-        }
-
         InputField(
             labelText = "Username",
             value = authViewModel.username,
@@ -196,6 +195,7 @@ fun RegisterForm(
 
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(horizontal = 8.dp),
         ) {
             val containerColor = if (isConnected) {
                 MaterialTheme.colorScheme.primary
@@ -228,7 +228,7 @@ fun RegisterForm(
                     containerColor = containerColor,
                     contentColor = contentColor,
                 ),
-                shape = CircleShape
+                shape = RoundedCornerShape(8.dp),
             ) {
                 Text(
                     text = "Create Account",
