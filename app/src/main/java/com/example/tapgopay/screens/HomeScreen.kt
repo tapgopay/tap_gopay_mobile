@@ -47,6 +47,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.tapgopay.R
 import com.example.tapgopay.screens.widgets.Menu
+import com.example.tapgopay.screens.widgets.payment_flow.PaymentFlow
 import com.example.tapgopay.screens.widgets.Transactions
 import com.example.tapgopay.ui.theme.TapGoPayTheme
 import kotlinx.coroutines.launch
@@ -58,6 +59,9 @@ fun HomeScreen(
 ) {
     val transactionsSheetState = rememberModalBottomSheetState()
     var viewAllTransactions by remember { mutableStateOf(false) }
+
+    val transferSheetState = rememberModalBottomSheetState()
+    var startTransfer by remember { mutableStateOf(false) }
 
     val scope = rememberCoroutineScope()
 
@@ -127,7 +131,12 @@ fun HomeScreen(
 
                 CardActions(
                     onDetailsBtnClicked = {},
-                    onTransferBtnClicked = {},
+                    onTransferBtnClicked = {
+                        startTransfer = true
+                        scope.launch {
+                            transferSheetState.expand()
+                        }
+                    },
                     onLimitsBtnClicked = {},
                     onFreezeBtnClicked = {},
                 )
@@ -149,6 +158,25 @@ fun HomeScreen(
                     ) {
                         Transactions()
                     }
+                }
+            }
+
+            if(startTransfer) {
+                ModalBottomSheet(
+                    onDismissRequest = {
+                        startTransfer = false
+                    },
+                    sheetState = transferSheetState,
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    PaymentFlow(
+                        exitPaymentFlow = {
+                            startTransfer = false
+                            scope.launch {
+                                transferSheetState.hide()
+                            }
+                        }
+                    )
                 }
             }
         }
