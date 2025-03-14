@@ -16,9 +16,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.example.tapgopay.R
+import com.example.tapgopay.data.Contact
 
 @Composable
-fun Avatar() {
+fun Avatar(
+    contact: Contact,
+) {
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -43,14 +46,14 @@ fun Avatar() {
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                "Miguel Walters",
+                contact.name,
                 style = MaterialTheme.typography.bodyLarge.copy(
                     fontWeight = FontWeight.Bold,
                 ),
             )
 
             Text(
-                "@miguel",
+                "@${contact.name.lowercase().replace(" ", "")}",
                 style = MaterialTheme.typography.bodyMedium,
             )
         }

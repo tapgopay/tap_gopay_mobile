@@ -1,32 +1,24 @@
 package com.example.tapgopay.screens.widgets.payment_flow
 
-import androidx.compose.foundation.background
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ElevatedButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.tapgopay.R
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.example.tapgopay.data.PaymentViewModel
 import com.example.tapgopay.screens.widgets.Avatar
 import com.example.tapgopay.screens.widgets.SoftKeyboard
 
@@ -34,6 +26,7 @@ import com.example.tapgopay.screens.widgets.SoftKeyboard
 fun EnterPaymentAmount(
     prev: () -> Unit,
     next: () -> Unit,
+    paymentViewModel: PaymentViewModel,
 ) {
     Column(
         modifier = Modifier
@@ -46,37 +39,45 @@ fun EnterPaymentAmount(
             prev = prev,
         )
 
-        Avatar()
+        if (paymentViewModel.selectedContact == null) {
+            prev()
+            return@Column
+        }
 
-        var sendAmount by remember { mutableStateOf("") }
+        Avatar(
+            contact = paymentViewModel.selectedContact!!,
+        )
 
         Text(
-            "KSH $sendAmount",
+            "KSH ${paymentViewModel.amount}",
             style = MaterialTheme.typography.displaySmall,
         )
 
         SoftKeyboard(
             onValueChange = { newValue ->
-                if(newValue == "<") {
-                    if (sendAmount.isNotEmpty()) {
-                        // delete last character on sendAmount string
-                        sendAmount = sendAmount.take(sendAmount.length - 1)
-                    }
-
-                    return@SoftKeyboard
-                }
-
-                if (newValue == "." && sendAmount.contains(".", ignoreCase = true)) {
-                    return@SoftKeyboard
-                }
-
-                sendAmount += newValue
+                paymentViewModel.newAmount(newValue)
             }
         )
 
+        val context = LocalContext.current
+
         ElevatedButton(
-            onClick = next,
-            modifier = Modifier.fillMaxWidth()
+            onClick = {
+                val result = paymentViewModel.transferFunds()
+                if (!result) {
+                    Toast.makeText(
+                        context,
+                        "Please enter a valid amount to send",
+                        Toast.LENGTH_SHORT
+                    )
+                        .show()
+                    return@ElevatedButton
+                }
+
+                next()
+            },
+            modifier = Modifier
+                .fillMaxWidth()
                 .padding(8.dp),
             colors = ButtonDefaults.elevatedButtonColors().copy(
                 containerColor = MaterialTheme.colorScheme.primary,
@@ -85,7 +86,7 @@ fun EnterPaymentAmount(
             shape = RoundedCornerShape(8.dp),
         ) {
             Text(
-                "Pay KSH $sendAmount",
+                "Pay KSH ${paymentViewModel.amount}",
                 style = MaterialTheme.typography.bodyLarge,
                 modifier = Modifier.padding(vertical = 12.dp),
             )
@@ -99,7 +100,8 @@ fun PreviewEnterPaymentAmount() {
     MaterialTheme() {
         EnterPaymentAmount(
             prev = {},
-            next = {}
+            next = {},
+            paymentViewModel = viewModel(),
         )
     }
 }

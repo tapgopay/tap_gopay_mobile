@@ -23,14 +23,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.tapgopay.R
+import com.example.tapgopay.data.Contact
 
 @Composable
 fun ContactCard(
+    contact: Contact,
     isSelected: Boolean = false,
     onSelect: () -> Unit,
 ) {
-    val containerColor = if(isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface
-    val contentColor = if(isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.scrim
+    val containerColor =
+        if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface
+    val contentColor =
+        if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.scrim
 
     Card(
         colors = CardDefaults.cardColors().copy(
@@ -60,7 +64,7 @@ fun ContactCard(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        "J",
+                        contact.name.first().uppercase(),
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.SemiBold,
                         ),
@@ -69,14 +73,14 @@ fun ContactCard(
 
                 Column {
                     Text(
-                        "From James",
+                        contact.name,
                         style = MaterialTheme.typography.bodyLarge.copy(
                             fontWeight = FontWeight.Bold,
                         ),
                         color = contentColor,
                     )
                     Text(
-                        "@jameson",
+                        "@${contact.name.lowercase().replace(" ", "")}",
                         style = MaterialTheme.typography.bodyMedium,
                         color = contentColor,
                     )
@@ -97,6 +101,7 @@ fun ContactCard(
 fun PreviewContactCard() {
     MaterialTheme {
         ContactCard(
+            contact = Contact(name = "John Doe", number = "123456789"),
             isSelected = true,
             onSelect = {},
         )

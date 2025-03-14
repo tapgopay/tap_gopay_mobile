@@ -25,28 +25,49 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.tapgopay.R
+import com.example.tapgopay.data.Contact
+import com.example.tapgopay.data.PaymentViewModel
 import com.example.tapgopay.screens.widgets.Avatar
 
 @Composable
 fun PaymentConfirmation(
+    prev: () -> Unit,
     done: () -> Unit,
     success: Boolean,
+    paymentViewModel: PaymentViewModel,
 ) {
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        if(success) {
-            PaymentSuccess()
+        if(paymentViewModel.selectedContact == null) {
+            prev()
+            return@Column
+        }
+
+        PaymentFlowNavbar(
+            title = "",
+            prev = prev,
+        )
+
+        if (success) {
+            PaymentSuccess(
+                contact = paymentViewModel.selectedContact!!,
+                amount = paymentViewModel.amount,
+            )
         } else {
-            PaymentFail()
+            PaymentFail(
+                contact = paymentViewModel.selectedContact!!
+            )
         }
 
         ElevatedButton(
             onClick = done,
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
                 .padding(horizontal = 24.dp, vertical = 64.dp),
             colors = ButtonDefaults.elevatedButtonColors().copy(
                 containerColor = MaterialTheme.colorScheme.primary,
@@ -64,7 +85,10 @@ fun PaymentConfirmation(
 }
 
 @Composable
-fun PaymentSuccess() {
+fun PaymentSuccess(
+    contact: Contact,
+    amount: String,
+) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -91,7 +115,7 @@ fun PaymentSuccess() {
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                "KSH 99.00",
+                "KSH $amount",
                 style = MaterialTheme.typography.displaySmall,
             )
 
@@ -103,7 +127,9 @@ fun PaymentSuccess() {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        Avatar()
+        Avatar(
+            contact = contact
+        )
 
         Spacer(modifier = Modifier.height(24.dp))
 
@@ -128,7 +154,9 @@ fun PaymentSuccess() {
 }
 
 @Composable
-fun PaymentFail() {
+fun PaymentFail(
+    contact: Contact,
+) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -167,7 +195,9 @@ fun PaymentFail() {
 
         Spacer(modifier = Modifier.height(24.dp))
 
-        Avatar()
+        Avatar(
+            contact = contact
+        )
 
         Spacer(modifier = Modifier.height(24.dp))
     }
@@ -180,6 +210,8 @@ fun PreviewPaymentConfirmation() {
         PaymentConfirmation(
             success = false,
             done = {},
+            prev = {},
+            paymentViewModel = viewModel(),
         )
     }
 }
