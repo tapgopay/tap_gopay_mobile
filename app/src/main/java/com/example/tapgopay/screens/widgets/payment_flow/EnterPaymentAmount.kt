@@ -20,6 +20,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.tapgopay.data.PaymentViewModel
 import com.example.tapgopay.screens.widgets.Avatar
+import com.example.tapgopay.screens.widgets.Navbar
 import com.example.tapgopay.screens.widgets.SoftKeyboard
 
 @Composable
@@ -34,7 +35,7 @@ fun EnterPaymentAmount(
         verticalArrangement = Arrangement.spacedBy(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        PaymentFlowNavbar(
+        Navbar(
             title = "Enter amount to pay",
             prev = prev,
         )
@@ -54,6 +55,7 @@ fun EnterPaymentAmount(
         )
 
         SoftKeyboard(
+            value = paymentViewModel.amount,
             onValueChange = { newValue ->
                 paymentViewModel.newAmount(newValue)
             }

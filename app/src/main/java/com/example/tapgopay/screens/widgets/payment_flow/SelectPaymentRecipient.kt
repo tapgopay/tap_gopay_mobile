@@ -37,6 +37,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.tapgopay.R
 import com.example.tapgopay.data.PaymentViewModel
 import com.example.tapgopay.screens.widgets.ContactCard
+import com.example.tapgopay.screens.widgets.Navbar
 
 @Composable
 fun SelectPaymentRecipient(
@@ -50,7 +51,7 @@ fun SelectPaymentRecipient(
             .fillMaxSize()
             .padding(16.dp),
     ) {
-        PaymentFlowNavbar(
+        Navbar(
             title = "Who would you like to pay?",
             prev = prev,
         )

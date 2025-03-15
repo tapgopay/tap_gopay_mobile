@@ -19,19 +19,7 @@ class PaymentViewModel : ViewModel() {
         get() = _contactList.toList()
 
     fun newAmount(value: String) {
-        if (value == "<") {
-            if (amount.isNotEmpty()) {
-                // delete last char of amount
-                amount = amount.take(amount.length - 1)
-            }
-            return
-        }
-
-        if (value == "." && (amount.isEmpty() || amount.contains(".", ignoreCase = true))) {
-            return
-        }
-
-        amount += value
+        amount = value
     }
 
     fun getContacts(context: Context) {

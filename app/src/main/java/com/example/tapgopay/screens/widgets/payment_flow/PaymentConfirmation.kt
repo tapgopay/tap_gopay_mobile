@@ -30,6 +30,7 @@ import com.example.tapgopay.R
 import com.example.tapgopay.data.Contact
 import com.example.tapgopay.data.PaymentViewModel
 import com.example.tapgopay.screens.widgets.Avatar
+import com.example.tapgopay.screens.widgets.Navbar
 
 @Composable
 fun PaymentConfirmation(
@@ -48,7 +49,7 @@ fun PaymentConfirmation(
             return@Column
         }
 
-        PaymentFlowNavbar(
+        Navbar(
             title = "",
             prev = prev,
         )
