@@ -70,6 +70,9 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation(libs.androidx.ui.text.google.fonts)
 
+    // Encrypted Shared Preferences
+    implementation("androidx.security:security-crypto:1.0.0-alpha02")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

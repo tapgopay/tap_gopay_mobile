@@ -1,5 +1,7 @@
 package com.example.tapgopay.data
 
+import android.content.Context
+import com.example.tapgopay.BuildConfig
 import com.google.gson.annotations.SerializedName
 import okhttp3.Interceptor
 import okhttp3.OkHttpClient
@@ -8,7 +10,6 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.Body
 import retrofit2.http.POST
-import com.example.tapgopay.BuildConfig
 import java.time.Duration
 
 class AuthInterceptor : Interceptor {
@@ -24,49 +25,50 @@ class AuthInterceptor : Interceptor {
     }
 }
 
-val client = OkHttpClient.Builder()
-    .addInterceptor(AuthInterceptor())
-    .callTimeout(Duration.ofSeconds(30))
-    .build()
+fun getRetrofitBuilder(context: Context): Retrofit {
+    val client = OkHttpClient.Builder()
+        .addInterceptor(AuthInterceptor())
+        .cookieJar(CustomCookieJar(context))
+        .callTimeout(Duration.ofSeconds(30))
+        .build()
 
-private val retrofitBuilder = Retrofit.Builder()
-    .addConverterFactory(GsonConverterFactory.create())
-    .baseUrl(BuildConfig.REMOTE_URL)
-    .client(client)
-    .build()
+    return Retrofit.Builder()
+        .addConverterFactory(GsonConverterFactory.create())
+        .baseUrl(BuildConfig.REMOTE_URL)
+        .client(client)
+        .build()
+}
 
-data class LoginCredentials(
+data class LoginRequest(
     val email: String,
     val password: String
 )
 
-data class LoginResponse(
+data class ApiResponse(
     val message: String,
-    @SerializedName("jwt_token") val jwtToken: String? = null
+    val data: Any? = null,
+    val errors: Map<String, String>? = null
 )
 
-data class RegisterCredentials(
+data class RegisterRequest(
     val username: String,
     val email: String,
     val password: String,
-)
-
-data class RegisterResponse(
-    val message: String,
-    val errors: Map<String, List<String>>? = null
+    @SerializedName("phone_no") val phoneNumber: String,
 )
 
 interface ApiService {
-    @POST("/android/api/login/")
-    suspend fun loginUser(@Body loginCredentials: LoginCredentials): Response<LoginResponse>
+    @POST("/api/login")
+    suspend fun loginUser(@Body loginRequest: LoginRequest): Response<ApiResponse>
 
-    @POST("/android/api/register/")
-    suspend fun registerUser(@Body registerCredentials: RegisterCredentials): Response<RegisterResponse>
+    @POST("/api/signup")
+    suspend fun registerUser(@Body registerResponse: RegisterRequest): Response<ApiResponse>
+
+    @POST("/api/send-verification-email")
+    suspend fun sendEmailVerification(@Body email: String): Response<ApiResponse>
+
+    @POST("/api/verify-auth")
+    suspend fun verifyAuth(): Response<ApiResponse>
 }
 
-object Api {
-    val retrofitService: ApiService by lazy {
-        retrofitBuilder.create(ApiService::class.java)
-    }
-}
 

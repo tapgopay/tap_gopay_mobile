@@ -11,23 +11,31 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.example.tapgopay.data.ApiService
 import com.example.tapgopay.data.NetworkMonitor
+import com.example.tapgopay.data.getRetrofitBuilder
 import com.example.tapgopay.screens.HomeScreen
 import com.example.tapgopay.screens.LoginScreen
 import com.example.tapgopay.screens.ProfileScreen
 import com.example.tapgopay.screens.RegisterScreen
 import com.example.tapgopay.screens.Routes
 import com.example.tapgopay.ui.theme.TapGoPayTheme
+import retrofit2.Retrofit
 
 class MainActivity : ComponentActivity() {
     companion object {
         const val TAG: String = "TapGoPay"
         lateinit var networkMonitor: NetworkMonitor
+        lateinit var retrofitService: ApiService
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         networkMonitor = NetworkMonitor(this)
+        retrofitService = lazy {
+            val retrofitBuilder = getRetrofitBuilder(applicationContext)
+            retrofitBuilder.create(ApiService::class.java)
+        }.value
 
         enableEdgeToEdge()
         setContent {
@@ -37,7 +45,7 @@ class MainActivity : ComponentActivity() {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
                     NavHost(
                         navController = navController,
-                        startDestination = Routes.HomeScreen.name,
+                        startDestination = Routes.LoginScreen.name,
                         modifier = Modifier.padding(innerPadding),
                     ) {
                         composable(route = Routes.LoginScreen.name) {

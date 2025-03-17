@@ -7,53 +7,86 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.tapgopay.MainActivity
-import com.google.gson.GsonBuilder
+import com.google.gson.Gson
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
-import java.io.IOException
+import retrofit2.Call
+import retrofit2.Callback
+import retrofit2.Response
+import retrofit2.Retrofit
 
-sealed class AuthError {
-    abstract val errMessage: String
-
-    data class ValidationError(val fieldName: String, override val errMessage: String) : AuthError()
-    data class ConnectionError(
-        override val errMessage: String = "Server currently unavailable. Please try again later"
-    ) : AuthError()
-
-    data class ServerError(override val errMessage: String) : AuthError()
-}
+data class Error(val message: String)
 
 enum class AuthState {
-    Idle, Loading, Error, Success
+    Idle, Loading, Fail, Success
 }
 
 class AuthViewModel : ViewModel() {
     companion object {
         private const val MIN_NAME_LENGTH = 3
         private const val MIN_PASSWORD_LENGTH = 6
+
+        private val api: ApiService = MainActivity.retrofitService
     }
 
     var username by mutableStateOf("")
     var email by mutableStateOf("")
     var password by mutableStateOf("")
+    var phoneNumber by mutableStateOf("")
     var agreedToTerms by mutableStateOf(false)
 
     var authState = MutableStateFlow(AuthState.Idle)
         private set
 
-    private val _authErrors = MutableSharedFlow<AuthError>(extraBufferCapacity = 1)
+    private val _authErrors = MutableSharedFlow<Error>(extraBufferCapacity = 1)
     val authErrors = _authErrors.asSharedFlow()
 
-    private val _connectionErrors = MutableSharedFlow<AuthError.ConnectionError>(extraBufferCapacity = 1)
-    val connectionErrors = _connectionErrors.asSharedFlow()
+    private val _ioErrors = MutableSharedFlow<Error>(extraBufferCapacity = 1)
+    val ioErrors = _ioErrors.asSharedFlow()
+
+    init {
+        verifyPreviousLogin()
+    }
+
+    private suspend fun handleResponse(response: Response<ApiResponse>) {
+        if (response.isSuccessful) {
+            authState.value = AuthState.Success
+            Log.d(MainActivity.TAG, "Response successful; $response")
+
+        } else {
+            authState.value = AuthState.Fail
+            Log.d(MainActivity.TAG, "Response failed; $response")
+
+            val responseString: String = response.errorBody()?.string() ?: run {
+                _authErrors.emit(
+                    Error("Request failed with unknown error message")
+                )
+                return
+            }
+
+            val apiResponse: ApiResponse = Gson().fromJson(responseString, ApiResponse::class.java)
+            val errors = apiResponse.errors?.values
+            if (errors == null) {
+                _authErrors.emit(
+                    Error(apiResponse.message)
+                )
+            } else {
+                errors.forEach { error ->
+                    _authErrors.emit(
+                        Error(error)
+                    )
+                }
+            }
+        }
+    }
 
     fun loginUser() = viewModelScope.launch {
         Log.d(MainActivity.TAG, "Attempting user login")
 
         // Validate login form
-        val loginErrors: List<AuthError> = buildList{
+        val loginErrors: List<Error> = buildList {
             add(validateEmail(email))
             add(validatePassword(password))
         }.filterNotNull()
@@ -68,66 +101,32 @@ class AuthViewModel : ViewModel() {
 
         authState.value = AuthState.Loading
 
-        try {
-            val credentials = LoginCredentials(email = email, password = password)
-            val httpResponse = Api.retrofitService.loginUser(credentials)
-
-            val responseBody: LoginResponse = httpResponse.body() ?: let {
-                val jsonResponse = httpResponse.errorBody()?.string()
-                    ?: return@let LoginResponse("Internal Server Error")
-
-                val gsonBuilder = GsonBuilder().create()
-                val loginResponse = gsonBuilder.fromJson(jsonResponse, LoginResponse::class.java)
-                loginResponse
-            }
-
-            Log.d(MainActivity.TAG, "Login HTTP response; $httpResponse")
-            Log.d(MainActivity.TAG, "Login HTTP body; $responseBody")
-
-            if (httpResponse.isSuccessful) {
-                Log.d(MainActivity.TAG, "Login success")
-                authState.value = AuthState.Success
-
-                // TODO: save jwt received from server in local storage
-
-            } else {
-                // Handle unsuccessful responses
-                Log.d(MainActivity.TAG, "Login failed")
-                authState.value = AuthState.Error
-                _authErrors.emit(
-                    AuthError.ServerError(responseBody.message)
-                )
-            }
-        } catch (e: IOException) {
-            // Handle connection errors
-            Log.d(MainActivity.TAG, "Login failed. Connection error; ${e.message}")
-            authState.value = AuthState.Error
-            _connectionErrors.emit(
-                AuthError.ConnectionError()
-            )
-        }
+        val credentials = LoginRequest(email, password)
+        val response = api.loginUser(credentials)
+        handleResponse(response)
     }
 
     fun registerUser() = viewModelScope.launch {
         Log.d(MainActivity.TAG, "Attempting user registration")
 
         // Validate register form
-        val registrationErrors: List<AuthError> = buildList {
+        val registrationErrors: List<Error> = buildList {
             add(validateUsername(username))
             add(validateEmail(email))
             add(validatePassword(password))
 
             if (!agreedToTerms) {
                 add(
-                    AuthError.ValidationError(
-                        "terms", "You must agree to terms and conditions before continuing"
-                    )
+                    Error("You must agree to terms and conditions before continuing")
                 )
             }
         }.filterNotNull()
 
         if (registrationErrors.isNotEmpty()) {
-            Log.d(MainActivity.TAG, "Registration failed. Validation errors; $registrationErrors")
+            Log.d(
+                MainActivity.TAG,
+                "Registration failed. Validation errors; $registrationErrors"
+            )
             registrationErrors
                 .reversed() // Reversing this list so that the topmost field error is shown first
                 .forEach { error -> _authErrors.emit(error) }
@@ -136,64 +135,47 @@ class AuthViewModel : ViewModel() {
 
         authState.value = AuthState.Loading
 
-        try {
-            val credentials = RegisterCredentials(
-                username = username, email = email, password = password
-            )
-            val httpResponse = Api.retrofitService.registerUser(credentials)
-            val responseBody: RegisterResponse = httpResponse.body() ?: let {
-                val jsonResponse = httpResponse.errorBody()?.string()
-                    ?: return@let RegisterResponse("Internal Server Error")
+        val credentials = RegisterRequest(
+            username = username,
+            email = email,
+            password = password,
+            phoneNumber = phoneNumber,
+        )
+        val response = api.registerUser(credentials)
+        handleResponse(response)
+    }
 
-                val gsonBuilder = GsonBuilder().create()
-                val registerResponse =
-                    gsonBuilder.fromJson(jsonResponse, RegisterResponse::class.java)
-                registerResponse
-            }
+    // Attempts to login a user with their previous session.
+    // Prevents the need for a user entering their password
+    // every time they open the app
+    fun verifyPreviousLogin() = viewModelScope.launch {
+        val response = api.verifyAuth()
+        if(response.isSuccessful) {
+            authState.value = AuthState.Success
 
-            Log.d(MainActivity.TAG, "Register HTTP response; $httpResponse")
-            Log.d(MainActivity.TAG, "Register HTTP body; $responseBody")
-
-            if (httpResponse.isSuccessful) {
-                Log.d(MainActivity.TAG, "Registration success")
-                authState.value = AuthState.Success
-
-            } else {
-                // Handle unsuccessful responses
-                Log.d(MainActivity.TAG, "Registration failed")
-                authState.value = AuthState.Error
-                _authErrors.emit(
-                    AuthError.ServerError(responseBody.message)
-                )
-            }
-
-        } catch (e: IOException) {
-            // Handle connection errors
-            Log.d(MainActivity.TAG, "Registration failed. Connection error; ${e.message}")
-            authState.value = AuthState.Error
-            _connectionErrors.emit(
-                AuthError.ConnectionError()
-            )
+        } else {
+            authState.value = AuthState.Fail
+            Log.d(MainActivity.TAG, "verifyPreviousLogin failed; $response")
         }
     }
 
-    private fun validateEmail(email: String): AuthError? {
+    private fun validateEmail(email: String): Error? {
         if (email.isEmpty()) {
-            return AuthError.ValidationError("email", "Email cannot be empty")
+            return Error("Email cannot be empty")
         }
 
         val emailRegex = Regex("[\\w-.]+@([\\w-]+\\.)+[\\w-]{2,4}")
         if (!emailRegex.matches(email)) {
-            return AuthError.ValidationError("email", "Invalid email format")
+            return Error("Invalid email format")
 
         }
         return null
     }
 
-    private fun validatePassword(password: String): AuthError? {
+    private fun validatePassword(password: String): Error? {
         if (password.length < MIN_PASSWORD_LENGTH) {
-            return AuthError.ValidationError(
-                "password", "Password cannot be less than $MIN_PASSWORD_LENGTH characters long"
+            return Error(
+                "Password cannot be less than $MIN_PASSWORD_LENGTH characters long"
             )
         }
 
@@ -201,10 +183,9 @@ class AuthViewModel : ViewModel() {
         return null
     }
 
-    private fun validateUsername(username: String): AuthError? {
+    private fun validateUsername(username: String): Error? {
         if (username.length < MIN_NAME_LENGTH) {
-            return AuthError.ValidationError(
-                "username",
+            return Error(
                 "Username too short. Minimum of $MIN_NAME_LENGTH characters acceptable"
             )
         }
