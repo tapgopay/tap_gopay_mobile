@@ -12,10 +12,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
-import retrofit2.Call
-import retrofit2.Callback
 import retrofit2.Response
-import retrofit2.Retrofit
 
 data class Error(val message: String)
 
@@ -27,6 +24,7 @@ class AuthViewModel : ViewModel() {
     companion object {
         private const val MIN_NAME_LENGTH = 3
         private const val MIN_PASSWORD_LENGTH = 6
+        const val MIN_OTP_LENGTH = 4
 
         private val api: ApiService = MainActivity.retrofitService
     }
@@ -36,6 +34,7 @@ class AuthViewModel : ViewModel() {
     var password by mutableStateOf("")
     var phoneNumber by mutableStateOf("")
     var agreedToTerms by mutableStateOf(false)
+    var otpNumber by mutableStateOf("")
 
     var authState = MutableStateFlow(AuthState.Idle)
         private set
@@ -47,7 +46,7 @@ class AuthViewModel : ViewModel() {
     val ioErrors = _ioErrors.asSharedFlow()
 
     init {
-        verifyPreviousLogin()
+//        verifyPreviousLogin()
     }
 
     private suspend fun handleResponse(response: Response<ApiResponse>) {
@@ -101,7 +100,7 @@ class AuthViewModel : ViewModel() {
 
         authState.value = AuthState.Loading
 
-        val credentials = LoginRequest(email, password)
+        val credentials = LoginDto(email, password)
         val response = api.loginUser(credentials)
         handleResponse(response)
     }
@@ -135,7 +134,7 @@ class AuthViewModel : ViewModel() {
 
         authState.value = AuthState.Loading
 
-        val credentials = RegisterRequest(
+        val credentials = RegisterDto(
             username = username,
             email = email,
             password = password,
@@ -150,13 +149,43 @@ class AuthViewModel : ViewModel() {
     // every time they open the app
     fun verifyPreviousLogin() = viewModelScope.launch {
         val response = api.verifyAuth()
-        if(response.isSuccessful) {
+        if (response.isSuccessful) {
             authState.value = AuthState.Success
 
         } else {
             authState.value = AuthState.Fail
             Log.d(MainActivity.TAG, "verifyPreviousLogin failed; $response")
         }
+    }
+
+    fun forgotPassword() = viewModelScope.launch {
+        val error: Error? = validateEmail(email)
+        error?.let {
+            _authErrors.emit(error)
+            return@launch
+        }
+
+        val request = EmailDto(email)
+        val response = api.forgotPassword(request)
+        handleResponse(response)
+    }
+
+    fun resetPassword() = viewModelScope.launch {
+        val errors: List<Error> = buildList {
+            add(validateOtpNumber(otpNumber))
+            add(validatePassword(password))
+        }.filterNotNull()
+
+        if (errors.isNotEmpty()) {
+            errors.reversed().map { error ->
+                _authErrors.emit(error)
+            }
+            return@launch
+        }
+
+        val request = PasswordResetDto(otpNumber, email, password)
+        val response = api.resetPassword(request)
+        handleResponse(response)
     }
 
     private fun validateEmail(email: String): Error? {
@@ -187,6 +216,15 @@ class AuthViewModel : ViewModel() {
         if (username.length < MIN_NAME_LENGTH) {
             return Error(
                 "Username too short. Minimum of $MIN_NAME_LENGTH characters acceptable"
+            )
+        }
+        return null
+    }
+
+    private fun validateOtpNumber(otpNumber: String): Error? {
+        if (otpNumber.length != MIN_OTP_LENGTH) {
+            return Error(
+                "Invalid OTP length"
             )
         }
         return null

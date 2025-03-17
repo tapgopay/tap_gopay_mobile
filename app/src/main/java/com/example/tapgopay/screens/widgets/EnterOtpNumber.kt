@@ -25,27 +25,23 @@ import androidx.compose.ui.unit.dp
 
 @Composable
 fun EnterOtpNumber(
-    subTitle: String = "An OTP code has been sent to your email. Enter OTP code to continue",
+    requiredOtpLength: Int,
     otpNumber: String,
     onNewOtpValue: (String) -> Unit,
-    prev: () -> Unit,
     resendOtp: () -> Unit,
 ) {
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(12.dp),
-        verticalArrangement = Arrangement.spacedBy(24.dp),
+        verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Navbar(
-            title = "",
-            prev = prev,
-        )
-
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(horizontal = 24.dp),
+            modifier = Modifier
+                .padding(horizontal = 24.dp)
+                .padding(top = 48.dp),
         ) {
             Text(
                 "Enter OTP code",
@@ -53,7 +49,7 @@ fun EnterOtpNumber(
             )
 
             Text(
-                subTitle,
+                "An OTP code has been sent to your email. Enter OTP code to continue",
                 style = MaterialTheme.typography.bodyLarge,
                 textAlign = TextAlign.Center,
             )
@@ -62,17 +58,18 @@ fun EnterOtpNumber(
         Column(
             modifier = Modifier.fillMaxSize(),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceAround,
+            verticalArrangement = Arrangement.Center,
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(24.dp),
+                modifier = Modifier.padding(vertical = 12.dp)
             ) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(32.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    repeat(4) { index ->
+                    repeat(requiredOtpLength) { index ->
                         val isColored = index < otpNumber.length
                         val borderColor =
                             if (isColored) Color.Transparent else MaterialTheme.colorScheme.scrim
@@ -127,9 +124,9 @@ fun EnterOtpNumber(
 fun PreviewEnterOtpNumber() {
     MaterialTheme {
         EnterOtpNumber(
+            requiredOtpLength = 6,
             otpNumber = "123",
             onNewOtpValue = {},
-            prev = {},
             resendOtp = {},
         )
     }

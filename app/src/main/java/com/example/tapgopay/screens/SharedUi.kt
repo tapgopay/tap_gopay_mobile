@@ -2,7 +2,6 @@ package com.example.tapgopay.screens
 
 import android.util.Log
 import androidx.annotation.DrawableRes
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,7 +14,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.Snackbar
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
@@ -99,7 +97,7 @@ fun PasswordField(
     labelText: String,
     value: String,
     onValueChanged: (String) -> Unit,
-    displayForgotPassword: Boolean = false,
+    navigateToForgotPasswordScreen: (() -> Unit)? = null,
 ) {
     var passwordVisible: Boolean by remember { mutableStateOf(false) }
 
@@ -151,14 +149,14 @@ fun PasswordField(
             colors = textFieldColors(),
         )
 
-        if (displayForgotPassword) {
+        navigateToForgotPasswordScreen?.let {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
             ) {
-                TextButton(onClick = {
-                    Log.d(MainActivity.TAG, "Forgot password button clicked")
-                }) {
+                TextButton(
+                    onClick = navigateToForgotPasswordScreen,
+                ) {
                     Text(
                         text = "Forgot Password?",
                         style = MaterialTheme.typography.labelLarge,

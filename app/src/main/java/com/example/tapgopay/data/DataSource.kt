@@ -39,7 +39,7 @@ fun getRetrofitBuilder(context: Context): Retrofit {
         .build()
 }
 
-data class LoginRequest(
+data class LoginDto(
     val email: String,
     val password: String
 )
@@ -50,25 +50,41 @@ data class ApiResponse(
     val errors: Map<String, String>? = null
 )
 
-data class RegisterRequest(
+data class RegisterDto(
     val username: String,
     val email: String,
     val password: String,
     @SerializedName("phone_no") val phoneNumber: String,
 )
 
+data class EmailDto(
+    val email: String,
+)
+
+data class PasswordResetDto(
+    @SerializedName("password_reset_token") val passwordResetToken: String,
+    val email: String,
+    @SerializedName("new_password") val newPassword: String,
+)
+
 interface ApiService {
     @POST("/api/login")
-    suspend fun loginUser(@Body loginRequest: LoginRequest): Response<ApiResponse>
+    suspend fun loginUser(@Body loginRequest: LoginDto): Response<ApiResponse>
 
-    @POST("/api/signup")
-    suspend fun registerUser(@Body registerResponse: RegisterRequest): Response<ApiResponse>
+    @POST("/api/register")
+    suspend fun registerUser(@Body registerResponse: RegisterDto): Response<ApiResponse>
 
-    @POST("/api/send-verification-email")
-    suspend fun sendEmailVerification(@Body email: String): Response<ApiResponse>
+    @POST("/api/send-email-verification")
+    suspend fun sendEmailVerification(@Body email: EmailDto): Response<ApiResponse>
 
     @POST("/api/verify-auth")
     suspend fun verifyAuth(): Response<ApiResponse>
+
+    @POST("/api/forgot-password")
+    suspend fun forgotPassword(@Body email: EmailDto): Response<ApiResponse>
+
+    @POST("/api/reset-password")
+    suspend fun resetPassword(@Body passwordResetDto: PasswordResetDto): Response<ApiResponse>
 }
 
 
