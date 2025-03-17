@@ -102,7 +102,7 @@ fun SelectPaymentRecipient(
                     refreshContactList(context)
 
                 } else {
-                    // permission denied
+                    // Permission denied
                     Toast.makeText(
                         context,
                         "Read contacts permission is required for this feature to be available",
@@ -114,19 +114,19 @@ fun SelectPaymentRecipient(
             Row() {
                 IconButton(
                     onClick = {
-                        // check permission to read contacts
+                        // Check permission to read contacts
                         val perm = ContextCompat.checkSelfPermission(
                             context, Manifest.permission.READ_CONTACTS,
                         )
 
                         when (perm) {
                             PackageManager.PERMISSION_GRANTED -> {
-                                // do some work that requires permission
+                                // Do some work that requires permission
                                 refreshContactList(context)
                             }
 
                             else -> {
-                                // asking for permission
+                                // Asking for permission
                                 launcher.launch(Manifest.permission.READ_CONTACTS)
                             }
                         }

@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
@@ -28,19 +27,17 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.tapgopay.MainActivity
 import com.example.tapgopay.R
-import com.example.tapgopay.data.AuthError
 import com.example.tapgopay.data.AuthState
 import com.example.tapgopay.data.AuthViewModel
+import com.example.tapgopay.data.Error
 import com.example.tapgopay.ui.theme.TapGoPayTheme
 import com.example.tapgopay.utils.titlecase
 import kotlinx.coroutines.delay
@@ -55,7 +52,7 @@ fun RegisterScreen(
 
     // Run once when screen is first composed
     LaunchedEffect(isConnected) {
-        if(!isConnected) {
+        if (!isConnected) {
             Toast.makeText(context, "No Internet Connection", Toast.LENGTH_LONG)
                 .show()
         }
@@ -71,7 +68,7 @@ fun RegisterScreen(
                 .fillMaxSize()
                 .padding(innerPadding),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.SpaceAround,
+            verticalArrangement = Arrangement.SpaceBetween,
         ) {
             Column(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -79,12 +76,12 @@ fun RegisterScreen(
             ) {
                 Text(
                     text = "Create An Account",
-                    style = MaterialTheme.typography.displaySmall,
+                    style = MaterialTheme.typography.headlineSmall,
                 )
 
                 Text(
                     text = "Join TapGoPay today.",
-                    style = MaterialTheme.typography.headlineSmall,
+                    style = MaterialTheme.typography.bodyLarge,
                 )
             }
 
@@ -104,7 +101,7 @@ fun RegisterForm(
     authViewModel: AuthViewModel = viewModel()
 ) {
     val context = LocalContext.current
-    var authError by remember { mutableStateOf<AuthError?>(null) }
+    var authError by remember { mutableStateOf<Error?>(null) }
     val authState by authViewModel.authState.collectAsState()
 
     // Runs when authState changes
@@ -134,14 +131,19 @@ fun RegisterForm(
     }
 
     LaunchedEffect(Unit) {
-        authViewModel.connectionErrors.collect { error ->
-            Toast.makeText(context, error.errMessage.titlecase(), Toast.LENGTH_LONG)
+        authViewModel.ioErrors.collect { error ->
+            Toast.makeText(context, error.message.titlecase(), Toast.LENGTH_LONG)
                 .show()
         }
     }
 
     authError?.let {
-        ErrorMessage(it.errMessage.titlecase())
+        ErrorMessage(
+            it.message.titlecase(),
+            onDismissRequest = {
+                authError = null
+            }
+        )
     }
 
     Column(
@@ -166,6 +168,16 @@ fun RegisterForm(
             },
             keyboardType = KeyboardType.Email,
             leadingIconId = R.drawable.mail_24dp,
+        )
+
+        InputField(
+            labelText = "Phone Number",
+            value = authViewModel.phoneNumber,
+            onValueChanged = { newValue ->
+                authViewModel.phoneNumber = newValue
+            },
+            keyboardType = KeyboardType.Phone,
+            leadingIconId = R.drawable.call_24dp,
         )
 
         PasswordField(

@@ -108,7 +108,7 @@ fun SoftKeyboard(
                         return@IconButton
                     }
 
-                    // delete last char
+                    // Delete last char
                     val newValue = value.take(value.length - 1)
                     onValueChange(newValue)
                 },

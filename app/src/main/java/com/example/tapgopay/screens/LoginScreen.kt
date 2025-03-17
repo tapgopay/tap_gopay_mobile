@@ -34,9 +34,9 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.tapgopay.MainActivity
 import com.example.tapgopay.R
-import com.example.tapgopay.data.AuthError
 import com.example.tapgopay.data.AuthState
 import com.example.tapgopay.data.AuthViewModel
+import com.example.tapgopay.data.Error
 import com.example.tapgopay.ui.theme.TapGoPayTheme
 import com.example.tapgopay.utils.titlecase
 import kotlinx.coroutines.delay
@@ -47,9 +47,26 @@ import kotlinx.coroutines.launch
 fun LoginScreen(
     navigateToSignup: () -> Unit,
     navigateToHomePage: () -> Unit,
+    authViewModel: AuthViewModel = viewModel(),
 ) {
     val isConnected by MainActivity.networkMonitor.isConnected.collectAsState()
     val context = LocalContext.current
+    val authState by authViewModel.authState.collectAsState()
+
+    // Runs when authState changes
+    LaunchedEffect(authState) {
+        if (authState == AuthState.Success) {
+            val message = "Login successful. Redirecting to Home Page"
+            Log.d(MainActivity.TAG, message)
+
+            Toast.makeText(context, message, Toast.LENGTH_LONG)
+                .show()
+
+            // Delay for a few seconds for user to read Toast message
+            delay(1000)
+            navigateToHomePage()
+        }
+    }
 
     // Run once when screen is first composed
     LaunchedEffect(isConnected) {
@@ -77,12 +94,12 @@ fun LoginScreen(
             ) {
                 Text(
                     text = "Login",
-                    style = MaterialTheme.typography.displaySmall,
+                    style = MaterialTheme.typography.headlineSmall,
                 )
 
                 Text(
                     text = "Welcome Back!",
-                    style = MaterialTheme.typography.headlineSmall,
+                    style = MaterialTheme.typography.bodyLarge,
                 )
             }
 
@@ -90,6 +107,7 @@ fun LoginScreen(
                 navigateToSignup = navigateToSignup,
                 navigateToHomePage = navigateToHomePage,
                 isConnected = isConnected,
+                authViewModel = authViewModel,
             )
         }
     }
@@ -101,26 +119,10 @@ fun LoginForm(
     navigateToSignup: () -> Unit,
     navigateToHomePage: () -> Unit,
     isConnected: Boolean = false,
-    authViewModel: AuthViewModel = viewModel(),
+    authViewModel: AuthViewModel,
 ) {
     val context = LocalContext.current
-    var authError by remember { mutableStateOf<AuthError?>(null) }
-    val authState by authViewModel.authState.collectAsState()
-
-    // Runs when authState changes
-    LaunchedEffect(authState) {
-        if (authState == AuthState.Success) {
-            val message = "Login successful. Redirecting to Home Page"
-            Log.d(MainActivity.TAG, message)
-
-            Toast.makeText(context, message, Toast.LENGTH_LONG)
-                .show()
-
-            // Delay for a few seconds for user to read Toast message
-            delay(1000)
-            navigateToHomePage()
-        }
-    }
+    var authError by remember { mutableStateOf<Error?>(null) }
 
     LaunchedEffect(Unit) {
         authViewModel.authErrors.collectLatest { error ->
@@ -134,14 +136,19 @@ fun LoginForm(
     }
 
     LaunchedEffect(Unit) {
-        authViewModel.connectionErrors.collect { error ->
-            Toast.makeText(context, error.errMessage.titlecase(), Toast.LENGTH_LONG)
+        authViewModel.ioErrors.collect { error ->
+            Toast.makeText(context, error.message.titlecase(), Toast.LENGTH_LONG)
                 .show()
         }
     }
 
     authError?.let {
-        ErrorMessage(it.errMessage.titlecase())
+        ErrorMessage(
+            it.message.titlecase(),
+            onDismissRequest = {
+                authError = null
+            }
+        )
     }
 
     Column(
