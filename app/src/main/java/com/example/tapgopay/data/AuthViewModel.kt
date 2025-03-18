@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.launch
 import retrofit2.Response
+import java.io.IOException
 
 data class Error(val message: String)
 
@@ -100,9 +101,17 @@ class AuthViewModel : ViewModel() {
 
         authState.value = AuthState.Loading
 
-        val credentials = LoginDto(email, password)
-        val response = api.loginUser(credentials)
-        handleResponse(response)
+        try {
+            val credentials = LoginDto(email, password)
+            val response = api.loginUser(credentials)
+            handleResponse(response)
+
+        } catch(e: IOException) {
+            Log.d(MainActivity.TAG, "Error contacting backend server; ${e.message}")
+            _authErrors.emit(
+                Error("Error contacting backend server")
+            )
+        }
     }
 
     fun registerUser() = viewModelScope.launch {
@@ -134,27 +143,42 @@ class AuthViewModel : ViewModel() {
 
         authState.value = AuthState.Loading
 
-        val credentials = RegisterDto(
-            username = username,
-            email = email,
-            password = password,
-            phoneNumber = phoneNumber,
-        )
-        val response = api.registerUser(credentials)
-        handleResponse(response)
+        try {
+            val credentials = RegisterDto(
+                username = username,
+                email = email,
+                password = password,
+                phoneNumber = phoneNumber,
+            )
+            val response = api.registerUser(credentials)
+            handleResponse(response)
+
+        } catch(e: IOException) {
+            Log.d(MainActivity.TAG, "Error contacting backend server; ${e.message}")
+            _authErrors.emit(
+                Error("Error contacting backend server")
+            )
+        }
     }
 
     // Attempts to login a user with their previous session.
     // Prevents the need for a user entering their password
     // every time they open the app
     fun verifyPreviousLogin() = viewModelScope.launch {
-        val response = api.verifyAuth()
-        if (response.isSuccessful) {
-            authState.value = AuthState.Success
+        try {
+            val response = api.verifyAuth()
+            if (response.isSuccessful) {
+                authState.value = AuthState.Success
 
-        } else {
-            authState.value = AuthState.Fail
-            Log.d(MainActivity.TAG, "verifyPreviousLogin failed; $response")
+            } else {
+                authState.value = AuthState.Fail
+                Log.d(MainActivity.TAG, "verifyPreviousLogin failed; $response")
+            }
+        }catch(e: IOException) {
+            Log.d(MainActivity.TAG, "Error contacting backend server; ${e.message}")
+            _authErrors.emit(
+                Error("Error contacting backend server")
+            )
         }
     }
 
@@ -165,9 +189,17 @@ class AuthViewModel : ViewModel() {
             return@launch
         }
 
-        val request = EmailDto(email)
-        val response = api.forgotPassword(request)
-        handleResponse(response)
+        try {
+            val request = EmailDto(email)
+            val response = api.forgotPassword(request)
+            handleResponse(response)
+
+        } catch(e: IOException) {
+            Log.d(MainActivity.TAG, "Error contacting backend server; ${e.message}")
+            _authErrors.emit(
+                Error("Error contacting backend server")
+            )
+        }
     }
 
     fun resetPassword() = viewModelScope.launch {
@@ -183,9 +215,18 @@ class AuthViewModel : ViewModel() {
             return@launch
         }
 
-        val request = PasswordResetDto(otpNumber, email, password)
-        val response = api.resetPassword(request)
-        handleResponse(response)
+        try {
+            val request = PasswordResetDto(otpNumber, email, password)
+            val response = api.resetPassword(request)
+            handleResponse(response)
+
+        } catch(e: IOException) {
+            Log.d(MainActivity.TAG, "Error contacting backend server; ${e.message}")
+            _authErrors.emit(
+                Error("Error contacting backend server")
+            )
+        }
+
     }
 
     private fun validateEmail(email: String): Error? {
