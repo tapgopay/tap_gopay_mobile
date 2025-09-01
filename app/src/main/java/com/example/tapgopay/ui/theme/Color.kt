@@ -2,6 +2,7 @@ package com.example.tapgopay.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
+val successColor = Color(0xFF4a934a)
 val primaryLight = Color(0xFF490E85)
 val onPrimaryLight = Color(0xFFFFFFFF)
 val primaryContainerLight = Color(0xFF612E9D)

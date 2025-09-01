@@ -1,6 +1,5 @@
 package com.example.tapgopay.screens
 
-import android.app.Application
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -9,8 +8,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -44,7 +45,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 @Composable
-fun LoginScreen(
+fun SignUpScreen(
     navigateTo: (Routes) -> Unit,
     authViewModel: AuthViewModel = viewModel(),
 ) {
@@ -65,13 +66,14 @@ fun LoginScreen(
                     .padding(horizontal = 8.dp),
             ) {
                 Text(
-                    text = "Login",
+                    text = "Join TapGoPay today",
                     style = MaterialTheme.typography.headlineLarge,
                     color = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.padding(end = 24.dp),
                 )
 
                 Text(
-                    text = "Welcome Back!",
+                    text = "Create An Account",
                     style = MaterialTheme.typography.headlineSmall,
                 )
             }
@@ -96,21 +98,40 @@ fun LoginScreen(
 
             Column(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
+                horizontalAlignment = Alignment.Start,
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
+                InputField(
+                    label = "Username",
+                    value = authViewModel.username,
+                    onValueChange = { value ->
+                        authViewModel.username = value
+                    },
+                    leadingIconId = R.drawable.person_24dp,
+                )
+
                 InputField(
                     label = "Email",
                     value = authViewModel.email,
                     onValueChange = { value ->
                         authViewModel.email = value
                     },
-                    leadingIconId = R.drawable.mail_24dp,
                     keyboardType = KeyboardType.Email,
+                    leadingIconId = R.drawable.mail_24dp,
+                )
+
+                InputField(
+                    label = "Phone Number",
+                    value = authViewModel.phoneNumber,
+                    onValueChange = { value ->
+                        authViewModel.phoneNumber = value
+                    },
+                    keyboardType = KeyboardType.Phone,
+                    leadingIconId = R.drawable.call_24dp,
                 )
 
                 PasswordField(
-                    label = "Enter Your 4 Digit Pin",
+                    label = "Enter 4 Digit Pin",
                     value = authViewModel.pin,
                     onValueChange = { value ->
                         if (value.length > MIN_PIN_LENGTH) {
@@ -118,23 +139,39 @@ fun LoginScreen(
                         }
                         authViewModel.pin = value
                     },
-                    onForgotPassword = {
-                        navigateTo(Routes.ForgotPasswordScreen)
-                    },
                 )
+
+                // Terms And Conditions section
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(vertical = 12.dp, horizontal = 8.dp),
+                ) {
+                    Checkbox(
+                        checked = authViewModel.agreedToTerms,
+                        onCheckedChange = { value ->
+                            authViewModel.agreedToTerms = value
+                        },
+                        modifier = Modifier.size(32.dp),
+                    )
+
+                    Text(
+                        text = "I agree to the Terms and Conditions",
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                }
 
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(horizontal = 8.dp),
                 ) {
                     val scope = rememberCoroutineScope()
 
                     ElevatedButton(
                         onClick = {
                             scope.launch {
-                                val loginSuccess = authViewModel.loginUser()
-                                if (loginSuccess) {
-                                    navigateTo(Routes.HomeScreen)
+                                val signupSuccess = authViewModel.registerUser()
+                                if (signupSuccess) {
+                                    navigateTo(Routes.SignUpScreen)
                                 }
                             }
                         },
@@ -148,28 +185,27 @@ fun LoginScreen(
                         shape = RoundedCornerShape(50),
                     ) {
                         Text(
-                            text = "Login",
+                            text = "Create Account",
                             modifier = Modifier.padding(vertical = 12.dp),
                             style = MaterialTheme.typography.titleLarge,
                         )
                     }
 
                     Row(
-                        horizontalArrangement = Arrangement.Start,
-                        verticalAlignment = Alignment.CenterVertically,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = "Don't have an account?",
+                            text = "Already have an account?",
                             style = MaterialTheme.typography.titleMedium,
                         )
 
                         TextButton(
                             onClick = {
-                                navigateTo(Routes.SignUpScreen)
+                                navigateTo(Routes.LoginScreen)
                             },
                         ) {
                             Text(
-                                text = "Register",
+                                text = "Login",
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.primary,
                                 fontWeight = FontWeight.SemiBold,
@@ -185,16 +221,8 @@ fun LoginScreen(
 
 @Preview(showBackground = true)
 @Composable
-fun PreviewLoginScreen() {
-    val app = Application()
-    val fakeViewModel = object : AuthViewModel(app) {
-        // override state with sample data
-    }
-
+fun PreviewSignUpScreen() {
     TapGoPayTheme {
-        LoginScreen(
-            authViewModel = fakeViewModel,
-            navigateTo = {},
-        )
+        SignUpScreen(navigateTo = {})
     }
 }

@@ -1,84 +1,97 @@
 package com.example.tapgopay.screens.widgets
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.tapgopay.R
-import com.example.tapgopay.data.TransactionType
-import java.util.Locale
-import kotlin.random.Random
+import com.example.tapgopay.data.generateRandomTransactions
+import com.example.tapgopay.remote.Transaction
+import com.example.tapgopay.remote.isIncoming
+import com.example.tapgopay.ui.theme.TapGoPayTheme
+import com.example.tapgopay.ui.theme.successColor
+import com.example.tapgopay.utils.formatAmount
+import com.example.tapgopay.utils.formatDatetime
 
 @Composable
-fun Transactions() {
+fun Transactions(
+    transactions: List<Transaction>,
+) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 8.dp, vertical = 8.dp)
+            .padding(8.dp)
     ) {
         Text(
             "Transactions",
-            style = MaterialTheme.typography.titleLarge.copy(
+            style = MaterialTheme.typography.headlineSmall.copy(
                 fontWeight = FontWeight.SemiBold,
             ),
-            modifier = Modifier.padding(horizontal = 8.dp)
         )
 
-        val scrollState = rememberScrollState()
-
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .padding(vertical = 4.dp)
-                .fillMaxHeight()
-                .verticalScroll(scrollState)
+                .fillMaxHeight(),
+            verticalArrangement = Arrangement.Center,
         ) {
-            repeat(9) {
-                val transactionType = if (Random.nextBoolean()) {
-                    TransactionType.Send
-                } else {
-                    TransactionType.Receive
+            item {
+                if (transactions.isEmpty()) {
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.Center,
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Image(
+                            painter = painterResource(R.drawable.no_transactions_24dp),
+                            contentDescription = "No transactions found",
+                            modifier = Modifier.size(256.dp),
+                        )
+                        Text(
+                            "No transactions found for this account",
+                            style = MaterialTheme.typography.titleLarge,
+                            textAlign = TextAlign.Center,
+                        )
+                    }
                 }
+            }
 
-                TransactionCard(
-                    name = "Miguel Walters",
-                    transactionType = transactionType,
-                    amount = 124.7f,
-                )
+            itemsIndexed(transactions) { index, transaction ->
+                TransactionView(transaction)
             }
         }
     }
 }
 
 @Composable
-fun TransactionCard(
-    name: String,
-    transactionType: TransactionType,
-    amount: Float,
+fun TransactionView(
+    transaction: Transaction,
 ) {
     Card(
         colors = CardDefaults.cardColors().copy(
@@ -86,104 +99,69 @@ fun TransactionCard(
         ),
         shape = RoundedCornerShape(12.dp),
         modifier = Modifier
-            .padding(8.dp)
             .clickable { }
     ) {
         Row(
             horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.padding(12.dp)
         ) {
-            Row(
-                modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            Column(
+                modifier = Modifier.weight(0.6f),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(52.dp)
-                        .background(
-                            color = MaterialTheme.colorScheme.surfaceContainer,
-                            shape = CircleShape
-                        ),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        "${name.first()}".uppercase(locale = Locale.US),
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.SemiBold,
-                        ),
-                    )
-                }
-
-                Column {
-                    // Sender's / Receiver's name
-                    Text(
-                        name,
-                        style = MaterialTheme.typography.titleMedium,
-                    )
-
-                    val backgroundColor = if (transactionType == TransactionType.Send) {
-                        MaterialTheme.colorScheme.error
+                val message = buildAnnotatedString {
+                    if (transaction.isIncoming()) {
+                        append("Received money from ")
                     } else {
-                        MaterialTheme.colorScheme.tertiaryContainer
-                    }
-                    val icon = if (transactionType == TransactionType.Send) {
-                        R.drawable.north_east_24dp
-                    } else {
-                        R.drawable.south_west_24dp
+                        append("Sent money to ")
                     }
 
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .padding(vertical = 4.dp)
-                            .background(
-                                color = backgroundColor.copy(
-                                    alpha = 0.2f,
-                                ),
-                                shape = RoundedCornerShape(24.dp),
-                            )
-                            .padding(4.dp)
-
+                    withStyle(
+                        SpanStyle(fontWeight = FontWeight.Bold)
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .background(
-                                    color = backgroundColor,
-                                    shape = CircleShape,
-                                )
-                        ) {
-                            Icon(
-                                painter = painterResource(icon),
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .size(20.dp)
-                                    .padding(4.dp),
-                                tint = MaterialTheme.colorScheme.onPrimary,
-                            )
+                        if (transaction.isIncoming()) {
+                            append(transaction.sender)
+                        } else {
+                            append(transaction.receiver)
                         }
-
-                        Text(
-                            transactionType.name,
-                            style = MaterialTheme.typography.labelLarge.copy(
-                                fontWeight = FontWeight.SemiBold,
-                            ),
-                            color = backgroundColor,
-                        )
-
-                        Spacer(modifier = Modifier.width(4.dp))
                     }
-
                 }
+
+                Text(
+                    message,
+                    style = MaterialTheme.typography.titleMedium,
+                )
+
+                Text(
+                    formatDatetime(transaction.createdAt),
+                    style = MaterialTheme.typography.titleMedium,
+                )
             }
 
-            Text(
-                "KSH $amount",
-                style = MaterialTheme.typography.bodyLarge.copy(
+            val backgroundColor = if (transaction.isIncoming()) {
+                successColor
+            } else {
+                MaterialTheme.colorScheme.error
+            }
+
+            Box(
+                modifier = Modifier
+                    .padding(vertical = 4.dp, horizontal = 8.dp)
+                    .weight(0.4f)
+                    .background(
+                        color = backgroundColor.copy(alpha = 0.2f),
+                        shape = RoundedCornerShape(24.dp),
+                    ),
+                contentAlignment = Alignment.Center,
+            ) {
+                Text(
+                    "KSH ${formatAmount(transaction.amount)}",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = backgroundColor,
                     fontWeight = FontWeight.SemiBold,
-                ),
-            )
+                    modifier = Modifier.padding(vertical = 8.dp)
+                )
+            }
         }
     }
 }
@@ -191,19 +169,28 @@ fun TransactionCard(
 @Preview(showBackground = true)
 @Composable
 fun PreviewTransactionCard() {
-    MaterialTheme {
-        TransactionCard(
-            name = "Miguel Walters",
-            transactionType = TransactionType.Receive,
-            amount = 124.7f,
-        )
+    val transactions = generateRandomTransactions()
+    val transaction = transactions.random()
+
+    TapGoPayTheme {
+        TransactionView(transaction)
     }
 }
 
 @Preview(showBackground = true, device = Devices.PIXEL)
 @Composable
 fun PreviewTransactions() {
-    MaterialTheme {
-        Transactions()
+    TapGoPayTheme {
+        Transactions(
+            generateRandomTransactions()
+        )
+    }
+}
+
+@Preview(showBackground = true, device = Devices.PIXEL)
+@Composable
+fun PreviewZeroTransactions() {
+    TapGoPayTheme {
+        Transactions(emptyList())
     }
 }

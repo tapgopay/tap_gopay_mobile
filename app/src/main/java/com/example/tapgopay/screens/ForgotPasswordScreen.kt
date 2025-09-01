@@ -1,7 +1,5 @@
 package com.example.tapgopay.screens
 
-import android.util.Log
-import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -21,25 +19,22 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.tapgopay.MainActivity
 import com.example.tapgopay.R
-import com.example.tapgopay.data.AuthState
 import com.example.tapgopay.data.AuthViewModel
-import com.example.tapgopay.data.Error
+import com.example.tapgopay.screens.widgets.InputField
+import com.example.tapgopay.screens.widgets.MessageBanner
 import com.example.tapgopay.ui.theme.TapGoPayTheme
 import com.example.tapgopay.utils.titlecase
 import kotlinx.coroutines.delay
@@ -49,63 +44,23 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ForgotPasswordScreen(
-    navigateToLoginScreen: () -> Unit,
-    navigateToResetPasswordScreen: (String) -> Unit,
-    authViewModel: AuthViewModel = viewModel(),
+    authViewModel: AuthViewModel,
+    navigateTo: (Routes) -> Unit,
 ) {
-    val isConnected by MainActivity.networkMonitor.isConnected.collectAsState()
-    val context = LocalContext.current
-    val authState by authViewModel.authState.collectAsState()
-    var authError by remember { mutableStateOf<Error?>(null) }
+    var error by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(Unit) {
-        authViewModel.authErrors.collectLatest { error ->
-            authError = error
-
+        authViewModel.errors.collectLatest {
+            error = it
             launch {
                 delay(5000)  // Hide after n seconds
-                authError = null
+                error = null
             }
         }
     }
 
-    authError?.let {
-        ErrorMessage(
-            it.message.titlecase(),
-            onDismissRequest = {
-                authError = null
-            }
-        )
-    }
-
-    LaunchedEffect(Unit) {
-        authViewModel.ioErrors.collect { error ->
-            Toast.makeText(context, error.message.titlecase(), Toast.LENGTH_LONG)
-                .show()
-        }
-    }
-
-    // Runs when authState changes
-    LaunchedEffect(authState) {
-        if (authState == AuthState.Success) {
-            val message = "Password reset email sent successfully"
-            Log.d(MainActivity.TAG, message)
-
-            Toast.makeText(context, message, Toast.LENGTH_LONG)
-                .show()
-
-            // Delay for a few seconds for user to read Toast message
-            delay(1000)
-            navigateToResetPasswordScreen(authViewModel.email)
-        }
-    }
-
-    // Run once when screen is first composed
-    LaunchedEffect(isConnected) {
-        if (!isConnected) {
-            Toast.makeText(context, "No Internet Connection", Toast.LENGTH_LONG)
-                .show()
-        }
+    error?.let {
+        MessageBanner(it.titlecase())
     }
 
     Scaffold(
@@ -117,7 +72,9 @@ fun ForgotPasswordScreen(
                 title = {},
                 navigationIcon = {
                     IconButton(
-                        onClick = navigateToLoginScreen,
+                        onClick = {
+                            navigateTo(Routes.LoginScreen)
+                        },
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.chevron_left_24dp),
@@ -155,62 +112,52 @@ fun ForgotPasswordScreen(
                 )
             }
 
-            ForgotPasswordForm(
-                email = authViewModel.email,
-                onEmailChange = { newEmail ->
-                    authViewModel.email = newEmail
-                },
-                onSendForgotPasswordForm = {
-                    authViewModel.forgotPassword()
-                }
-            )
-        }
-    }
-}
-
-@Composable
-fun ForgotPasswordForm(
-    email: String,
-    onEmailChange: (String) -> Unit,
-    onSendForgotPasswordForm: () -> Unit,
-    btnContainerColor: Color = MaterialTheme.colorScheme.primary,
-    btnContentColor: Color = MaterialTheme.colorScheme.onPrimary,
-) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center,
-    ) {
-        InputField(
-            labelText = "Email",
-            value = email,
-            onValueChanged = { newValue ->
-                onEmailChange(newValue)
-            },
-            leadingIconId = R.drawable.mail_24dp,
-            keyboardType = KeyboardType.Email,
-        )
-
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(horizontal = 8.dp),
-        ) {
-            ElevatedButton(
-                onClick = onSendForgotPasswordForm,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 24.dp),
-                colors = ButtonDefaults.buttonColors().copy(
-                    containerColor = btnContainerColor,
-                    contentColor = btnContentColor,
-                ),
-                shape = RoundedCornerShape(8.dp),
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
             ) {
-                Text(
-                    text = "Send Password Reset",
-                    modifier = Modifier.padding(vertical = 8.dp),
-                    style = MaterialTheme.typography.bodyLarge,
+                InputField(
+                    label = "Email",
+                    value = authViewModel.email,
+                    onValueChange = { value ->
+                        authViewModel.email = value
+                    },
+                    leadingIconId = R.drawable.mail_24dp,
+                    keyboardType = KeyboardType.Email,
                 )
+
+                val scope = rememberCoroutineScope()
+
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                ) {
+                    ElevatedButton(
+                        onClick = {
+                            scope.launch {
+                                val ok = authViewModel.forgotPassword()
+                                if (ok) {
+                                    navigateTo(Routes.ResetPasswordScreen)
+                                }
+                            }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 24.dp),
+                        colors = ButtonDefaults.buttonColors().copy(
+                            containerColor = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                        ),
+                        shape = RoundedCornerShape(50),
+                    ) {
+                        Text(
+                            text = "Send Password Reset",
+                            modifier = Modifier.padding(vertical = 12.dp),
+                            style = MaterialTheme.typography.titleLarge,
+                        )
+                    }
+                }
             }
         }
     }
@@ -221,8 +168,8 @@ fun ForgotPasswordForm(
 fun PreviewForgotPasswordScreen() {
     TapGoPayTheme {
         ForgotPasswordScreen(
-            navigateToLoginScreen = {},
-            navigateToResetPasswordScreen = {},
+            authViewModel = viewModel(),
+            navigateTo = {}
         )
     }
 }

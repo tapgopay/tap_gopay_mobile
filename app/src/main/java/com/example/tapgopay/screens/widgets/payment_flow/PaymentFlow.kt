@@ -15,17 +15,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.example.tapgopay.data.Contact
-import com.example.tapgopay.data.PaymentViewModel
-import com.example.tapgopay.data.Status
-import com.example.tapgopay.data.TransferDetails
+import com.example.tapgopay.data.AppViewModel
+import com.example.tapgopay.data.toContact
+import com.example.tapgopay.data.validateAmount
+import com.example.tapgopay.remote.CreditCard
+import com.example.tapgopay.remote.Transaction
 import com.example.tapgopay.screens.widgets.EnterPinNumber
 import kotlinx.coroutines.launch
 
 @Composable
 fun PaymentFlow(
+    sender: CreditCard,
     exitPaymentFlow: () -> Unit,
-    paymentViewModel: PaymentViewModel = viewModel(),
+    appViewModel: AppViewModel = viewModel(),
 ) {
     var index by remember { mutableIntStateOf(0) }
     val scope = rememberCoroutineScope()
@@ -36,82 +38,81 @@ fun PaymentFlow(
             .fillMaxSize()
             .padding(horizontal = 12.dp)
     ) {
+        var transactionResult by remember { mutableStateOf<Transaction?>(null) }
+
         when (index) {
             0 -> {
+                val context = LocalContext.current
+
                 SelectPaymentRecipient(
-                    contactList = paymentViewModel.contactList,
-                    selectedContact = paymentViewModel.selectedContact,
-                    onSelectContact = { contact ->
-                        paymentViewModel.selectContact(contact)
+                    contacts = appViewModel.contacts,
+                    onContinue = {
+                        val ok = appViewModel.setPaymentRecipient(it)
+                        if (!ok) {
+                            Toast.makeText(
+                                context,
+                                "Incorrect recipient account number of phone number",
+                                Toast.LENGTH_LONG
+                            )
+                                .show()
+                            return@SelectPaymentRecipient
+                        }
                         index++
                     },
-                    refreshContactList = { context ->
-                        paymentViewModel.getContacts(context)
+                    refreshContacts = {
+                        appViewModel.getContacts(context)
                     },
-                    prev = exitPaymentFlow,
+                    goBack = exitPaymentFlow,
                 )
             }
 
             1 -> {
                 EnterPaymentAmount(
-                    amount = paymentViewModel.amount,
-                    onNewAmount = { amount ->
-                        paymentViewModel.newAmount(amount)
-                    },
-                    contactDetails = paymentViewModel.selectedContact!!,
-                    prev = { index-- },
-                    next = {
-                        paymentViewModel.validateAmount()
+                    receiver = appViewModel.paymentRecipient!!.toContact(),
+                    goBack = { index-- },
+                    onContinue = { amount ->
+                        try {
+                            validateAmount(amount)
 
-                        if (paymentViewModel.validAmount) {
+                            // Move on to next section
                             index++
-                            return@EnterPaymentAmount
+                        } catch (e: IllegalArgumentException) {
+                            Toast.makeText(
+                                context,
+                                e.message ?: "Please enter a valid amount",
+                                Toast.LENGTH_SHORT
+                            )
+                                .show()
                         }
-
-                        Toast.makeText(context, "Please enter a valid amount", Toast.LENGTH_SHORT)
-                            .show()
                     },
                 )
             }
 
             2 -> {
-                var pinNumber by remember { mutableStateOf("") }
+                var isLoading by remember { mutableStateOf(false) }
 
                 EnterPinNumber(
-                    subTitle = "Please enter your pin to verify payment",
-                    pinNumber = pinNumber,
-                    onNewPinNumber = { pin ->
-                        pinNumber = pin
+                    subtitle = "Please enter your pin to verify payment",
+                    isLoading = isLoading,
+                    onContinue = { pin ->
+                        isLoading = true
+                        appViewModel.pin = pin
 
-                        if (pinNumber.length == 4) {
-                            scope.launch {
-                                val isAuth = paymentViewModel.authenticateUser()
-                                if (!isAuth) {
-                                    Toast.makeText(context, "Invalid pin number", Toast.LENGTH_LONG)
-                                        .show()
-                                    return@launch
-                                }
-
-                                paymentViewModel.transferFunds()
-                                index++
-                            }
+                        scope.launch {
+                            appViewModel.transferFunds(sender)
+                            isLoading = false
+                            index++
                         }
                     },
-                    authStatus = paymentViewModel.authStatus,
-                    prev = { index-- }
+                    goBack = { index-- }
                 )
             }
 
             3 -> {
-                PaymentConfirmation(
-                    prev = { index-- },
+                TransactionReceipt(
+                    goBack = { index-- },
                     done = exitPaymentFlow,
-                    paymentDetails = TransferDetails(
-                        sender = Contact("John Doe", "123456789"),
-                        receiver = Contact("Mary Jane", "987654321"),
-                        amount = 20.45f,
-                        success = paymentViewModel.transferStatus == Status.Success,
-                    )
+                    transaction = transactionResult!!
                 )
             }
         }

@@ -3,6 +3,7 @@ package com.example.tapgopay.screens.widgets
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -16,19 +17,22 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.tapgopay.R
+import com.example.tapgopay.ui.theme.TapGoPayTheme
 
 @Composable
 fun Navbar(
     title: String,
-    prev: () -> Unit,
+    goBack: () -> Unit,
 ) {
     Row(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
     ) {
         IconButton(
-            onClick = prev,
+            onClick = goBack,
         ) {
             Icon(
                 painter = painterResource(R.drawable.chevron_left_24dp),
@@ -40,7 +44,9 @@ fun Navbar(
         Text(
             title,
             style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(end = 32.dp),
             textAlign = TextAlign.Center,
         )
     }
@@ -49,10 +55,10 @@ fun Navbar(
 @Preview(showBackground = true)
 @Composable
 fun PreviewNavbar() {
-    MaterialTheme {
+    TapGoPayTheme {
         Navbar(
             title = "My Title",
-            prev = {},
+            goBack = {},
         )
     }
 }

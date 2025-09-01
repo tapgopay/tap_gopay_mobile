@@ -1,5 +1,6 @@
 package com.example.tapgopay.screens.widgets
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -16,6 +17,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -23,18 +27,63 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.tapgopay.R
-import com.example.tapgopay.data.Contact
+import com.example.tapgopay.remote.Contact
+import com.example.tapgopay.ui.theme.TapGoPayTheme
+
+val defaultProfilePics = listOf(
+    R.drawable.man, R.drawable.man_2,
+    R.drawable.woman, R.drawable.woman_2,
+)
 
 @Composable
-fun ContactCard(
+fun ContactCardColumn(
+    contact: Contact,
+) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        val profilePic by remember {
+            mutableIntStateOf(defaultProfilePics.random())
+        }
+
+        Image(
+            painter = painterResource(profilePic),
+            contentDescription = null,
+            modifier = Modifier.size(96.dp)
+        )
+
+        Column(
+            verticalArrangement = Arrangement.spacedBy(4.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Text(
+                contact.name,
+                style = MaterialTheme.typography.titleLarge
+            )
+            Text(
+                "Account: ${contact.cardNo}",
+                style = MaterialTheme.typography.titleMedium,
+            )
+            Text(
+                "Phone: ${contact.phoneNo}",
+                style = MaterialTheme.typography.titleMedium,
+            )
+        }
+    }
+}
+
+@Composable
+fun ContactCardRow(
     contact: Contact,
     isSelected: Boolean = false,
-    onSelect: () -> Unit,
+    onClick: () -> Unit,
 ) {
     val containerColor =
         if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface
     val contentColor =
         if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.scrim
+    contact.name
 
     Card(
         colors = CardDefaults.cardColors().copy(
@@ -42,8 +91,7 @@ fun ContactCard(
         ),
         shape = RoundedCornerShape(8.dp),
         modifier = Modifier
-            .padding(4.dp)
-            .clickable { onSelect() }
+            .clickable { onClick() }
     ) {
         Row(
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -74,14 +122,12 @@ fun ContactCard(
                 Column {
                     Text(
                         contact.name,
-                        style = MaterialTheme.typography.bodyLarge.copy(
-                            fontWeight = FontWeight.Bold,
-                        ),
+                        style = MaterialTheme.typography.titleLarge,
                         color = contentColor,
                     )
                     Text(
-                        "@${contact.name.lowercase().replace(" ", "")}",
-                        style = MaterialTheme.typography.bodyMedium,
+                        contact.phoneNo,
+                        style = MaterialTheme.typography.titleMedium,
                         color = contentColor,
                     )
                 }
@@ -98,12 +144,30 @@ fun ContactCard(
 
 @Preview(showBackground = true)
 @Composable
-fun PreviewContactCard() {
-    MaterialTheme {
-        ContactCard(
-            contact = Contact(name = "John Doe", number = "123456789"),
-            isSelected = true,
-            onSelect = {},
+fun PreviewContactCardColumn() {
+    val contact = Contact(
+        name = "Mary Jane",
+        cardNo = "123456789",
+        phoneNo = "+254 120811682"
+    )
+    TapGoPayTheme {
+        ContactCardColumn(contact)
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewContactCardRow() {
+    val contact = Contact(
+        name = "Mary Jane",
+        cardNo = "123456789",
+        phoneNo = "+254 120811682"
+    )
+    TapGoPayTheme {
+        ContactCardRow(
+            contact = contact,
+            isSelected = false,
+            onClick = {},
         )
     }
 }

@@ -1,281 +1,227 @@
 package com.example.tapgopay.data
 
+import android.app.Application
+import android.content.Context
+import android.util.Base64
 import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
+import androidx.core.content.edit
+import androidx.lifecycle.AndroidViewModel
 import com.example.tapgopay.MainActivity
 import com.example.tapgopay.remote.Api
-import com.example.tapgopay.remote.EmailDto
-import com.example.tapgopay.remote.LoginDto
-import com.example.tapgopay.remote.MessageResponse
-import com.example.tapgopay.remote.PasswordResetDto
-import com.example.tapgopay.remote.RegisterDto
-import com.google.gson.Gson
+import com.example.tapgopay.remote.EmailRequest
+import com.example.tapgopay.remote.LoginRequest
+import com.example.tapgopay.remote.PasswordResetRequest
+import com.example.tapgopay.utils.extractErrorMessage
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.launch
-import retrofit2.Response
+import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
+import java.io.File
 import java.io.IOException
+import java.security.PrivateKey
 
-data class Error(val message: String)
-
-enum class AuthState {
-    Idle, Loading, Fail, Success
-}
-
-class AuthViewModel : ViewModel() {
-    companion object {
-        private const val MIN_NAME_LENGTH = 3
-        private const val MIN_PASSWORD_LENGTH = 6
-        const val MIN_OTP_LENGTH = 4
-    }
-
-    private val api = Api.authService
-
+open class AuthViewModel(application: Application) : AndroidViewModel(application) {
     var username by mutableStateOf("")
     var email by mutableStateOf("")
-    var password by mutableStateOf("")
+    var pin by mutableStateOf("")
     var phoneNumber by mutableStateOf("")
     var agreedToTerms by mutableStateOf(false)
-    var otpNumber by mutableStateOf("")
+    var otp by mutableStateOf("")
 
-    var authState = MutableStateFlow(AuthState.Idle)
-        private set
+    private val _errors = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    val errors = _errors.asSharedFlow()
 
-    private val _authErrors = MutableSharedFlow<Error>(extraBufferCapacity = 1)
-    val authErrors = _authErrors.asSharedFlow()
-
-    private val _ioErrors = MutableSharedFlow<Error>(extraBufferCapacity = 1)
-    val ioErrors = _ioErrors.asSharedFlow()
-
-    init {
-//        verifyPreviousLogin()
-    }
-
-    private suspend fun handleResponse(response: Response<MessageResponse>) {
-        if (response.isSuccessful) {
-            authState.value = AuthState.Success
-            Log.d(MainActivity.TAG, "Response successful; $response")
-
-        } else {
-            authState.value = AuthState.Fail
-            Log.d(MainActivity.TAG, "Response failed; $response")
-
-            val responseString: String = response.errorBody()?.string() ?: run {
-                _authErrors.emit(
-                    Error("Request failed with unknown error message")
-                )
-                return
-            }
-
-            val apiResponse: MessageResponse =
-                Gson().fromJson(responseString, MessageResponse::class.java)
-            val errors = apiResponse.errors?.values
-            if (errors == null) {
-                _authErrors.emit(
-                    Error(apiResponse.message)
-                )
-            } else {
-                errors.forEach { error ->
-                    _authErrors.emit(
-                        Error(error)
-                    )
+    private suspend fun handleException(
+        e: Exception,
+        message: String = "Unexpected error occurred"
+    ) {
+        when (e) {
+            is IllegalArgumentException -> {
+                e.message?.let {
+                    _errors.emit(it)
                 }
             }
+
+            is IOException -> {
+                Log.e(MainActivity.TAG, "$message ${e.message}")
+                _errors.emit("Error contacting backend server")
+            }
+
+            else -> {
+                Log.e(MainActivity.TAG, "$message ${e.message}")
+                _errors.emit(message)
+            }
         }
     }
 
-    fun loginUser() = viewModelScope.launch {
-        Log.d(MainActivity.TAG, "Attempting user login")
-
-        // Validate login form
-        val loginErrors: List<Error> = buildList {
-            add(validateEmail(email))
-            add(validatePassword(password))
-        }.filterNotNull()
-
-        if (loginErrors.isNotEmpty()) {
-            Log.d(MainActivity.TAG, "Login failed. Validation errors; $loginErrors")
-            loginErrors
-                .reversed() // Reversing this list so that the topmost field error is shown first
-                .forEach { error -> _authErrors.emit(error) }
-            return@launch
-        }
-
-        authState.value = AuthState.Loading
-
+    suspend fun registerUser(): Boolean = withContext(Dispatchers.IO) {
         try {
-            val credentials = LoginDto(email, password)
-            val response = api.loginUser(credentials)
-            handleResponse(response)
+            Log.d(MainActivity.TAG, "Attempting user registration")
 
-        } catch (e: IOException) {
-            Log.d(MainActivity.TAG, "Error contacting backend server; ${e.message}")
-            _authErrors.emit(
-                Error("Error contacting backend server")
-            )
-        }
-    }
-
-    fun registerUser() = viewModelScope.launch {
-        Log.d(MainActivity.TAG, "Attempting user registration")
-
-        // Validate register form
-        val registrationErrors: List<Error> = buildList {
-            add(validateUsername(username))
-            add(validateEmail(email))
-            add(validatePassword(password))
+            validateUsername(username)
+            validateEmail(email)
+            validatePin(pin)
+            validatePhoneNumber(phoneNumber)
 
             if (!agreedToTerms) {
-                add(
-                    Error("You must agree to terms and conditions before continuing")
+                _errors.emit("You must agree to terms and conditions before continuing")
+                return@withContext false
+            }
+
+            // Generate private and public key pair.
+            // Use user's email as private key's filename
+            val filesDir = getApplication<Application>().filesDir.toString()
+            val privKeyFile = File(
+                filesDir, "$email.key",
+            )
+            val pubKeyFile = File(
+                filesDir, "$email.pub",
+            )
+            val keyPair: KeyPair? = generateAndSaveKeyPair(pin, privKeyFile, pubKeyFile)
+            if (keyPair == null) {
+                _errors.emit("Unexpected error creating account")
+                return@withContext false
+            }
+
+            // Send public key to server
+            val pubKeyBytes = Base64.encode(keyPair.pubKey.pemEncode(), Base64.DEFAULT)
+            val requestFile =
+                pubKeyBytes.toRequestBody("application/octet-stream".toMediaTypeOrNull())
+            val body = MultipartBody.Part.createFormData(
+                "public_key",
+                pubKeyFile.name,
+                requestFile,
+            )
+
+            // Extra form fields
+            val username = username.toRequestBody("text/plain".toMediaTypeOrNull())
+            val email = email.toRequestBody("text/plain".toMediaTypeOrNull())
+            val phoneNumber = phoneNumber.toRequestBody("text/plain".toMediaTypeOrNull())
+
+            val response = Api.authService.registerUser(
+                body, username, email, phoneNumber,
+            )
+            if (!response.isSuccessful) {
+                val signupErrors = response.extractErrorMessage()
+                signupErrors?.let {
+                    _errors.emit(it)
+                }
+                return@withContext false
+            }
+
+            return@withContext true
+
+        } catch (e: Exception) {
+            handleException(e, "Error creating user account")
+            return@withContext false
+        }
+    }
+
+    suspend fun loginUser(): Boolean = withContext(Dispatchers.IO) {
+        try {
+            Log.d(MainActivity.TAG, "Attempting user login")
+
+            validateEmail(email)
+            validatePin(pin)
+
+            // Use user's email as private key's filename
+            val filesDir = getApplication<Application>().filesDir.toString()
+            val privKeyFile = File(
+                filesDir, "$email.key"
+            )
+            val privateKey: PrivateKey = loadAndDecryptPrivateKey(pin, privKeyFile) ?: run {
+                // Error loading user's private key.
+                // Maybe they are logging in from this device for first time???
+                // In that case, we generate new key pair
+                val pubKeyFile = File(
+                    filesDir, "$email.pub"
                 )
+                val keyPair = generateAndSaveKeyPair(pin, privKeyFile, pubKeyFile)
+                if (keyPair == null) {
+                    _errors.emit("Unexpected error logging in")
+                    return@withContext false
+                }
+                keyPair.privKey
             }
-        }.filterNotNull()
 
-        if (registrationErrors.isNotEmpty()) {
-            Log.d(
-                MainActivity.TAG,
-                "Registration failed. Validation errors; $registrationErrors"
-            )
-            registrationErrors
-                .reversed() // Reversing this list so that the topmost field error is shown first
-                .forEach { error -> _authErrors.emit(error) }
-            return@launch
-        }
-
-        authState.value = AuthState.Loading
-
-        try {
-            val credentials = RegisterDto(
-                username = username,
-                email = email,
-                password = password,
-                phoneNumber = phoneNumber,
-            )
-            val response = api.registerUser(credentials)
-            handleResponse(response)
-
-        } catch (e: IOException) {
-            Log.d(MainActivity.TAG, "Error contacting backend server; ${e.message}")
-            _authErrors.emit(
-                Error("Error contacting backend server")
-            )
-        }
-    }
-
-    // Attempts to login a user with their previous session.
-    // Prevents the need for a user entering their password
-    // every time they open the app
-    fun verifyPreviousLogin() = viewModelScope.launch {
-        try {
-            val response = api.verifyAuth()
-            if (response.isSuccessful) {
-                authState.value = AuthState.Success
-
-            } else {
-                authState.value = AuthState.Fail
-                Log.d(MainActivity.TAG, "verifyPreviousLogin failed; $response")
+            // Sign user's email with private key to authenticate with server
+            val signature: ByteArray? = signData(email.toByteArray(), privateKey)
+            if (signature == null) {
+                _errors.emit("Unexpected error logging in")
+                return@withContext false
             }
-        } catch (e: IOException) {
-            Log.d(MainActivity.TAG, "Error contacting backend server; ${e.message}")
-            _authErrors.emit(
-                Error("Error contacting backend server")
-            )
-        }
-    }
+            val base64EncodedSignature = Base64.encodeToString(signature, Base64.DEFAULT)
 
-    fun forgotPassword() = viewModelScope.launch {
-        val error: Error? = validateEmail(email)
-        error?.let {
-            _authErrors.emit(error)
-            return@launch
-        }
-
-        try {
-            val request = EmailDto(email)
-            val response = api.forgotPassword(request)
-            handleResponse(response)
-
-        } catch (e: IOException) {
-            Log.d(MainActivity.TAG, "Error contacting backend server; ${e.message}")
-            _authErrors.emit(
-                Error("Error contacting backend server")
-            )
-        }
-    }
-
-    fun resetPassword() = viewModelScope.launch {
-        val errors: List<Error> = buildList {
-            add(validateOtpNumber(otpNumber))
-            add(validatePassword(password))
-        }.filterNotNull()
-
-        if (errors.isNotEmpty()) {
-            errors.reversed().map { error ->
-                _authErrors.emit(error)
+            val request = LoginRequest(email, base64EncodedSignature)
+            val response = Api.authService.loginUser(request)
+            if (!response.isSuccessful) {
+                val loginErrors = response.extractErrorMessage()
+                loginErrors?.let {
+                    _errors.emit(it)
+                }
+                return@withContext false
             }
-            return@launch
-        }
 
+            // Save private key's filepath to shared preferences;
+            // we are going to be needing it throughout the app.
+            // eg. when user wants to make transaction
+            val sharedPrefs = getApplication<Application>().getSharedPreferences(
+                MainActivity.SHARED_PREFERENCES, Context.MODE_PRIVATE
+            )
+            sharedPrefs.edit {
+                putString(MainActivity.PRIVATE_KEY_FILENAME, privKeyFile.name)
+            }
+            return@withContext true
+
+        } catch (e: Exception) {
+            handleException(e, "Error logging in")
+            return@withContext false
+        }
+    }
+
+    suspend fun forgotPassword(): Boolean = withContext(Dispatchers.IO) {
         try {
-            val request = PasswordResetDto(otpNumber, email, password)
-            val response = api.resetPassword(request)
-            handleResponse(response)
+            validateEmail(email)
 
-        } catch (e: IOException) {
-            Log.d(MainActivity.TAG, "Error contacting backend server; ${e.message}")
-            _authErrors.emit(
-                Error("Error contacting backend server")
-            )
+            val request = EmailRequest(email)
+            val response = Api.authService.forgotPassword(request)
+            if (!response.isSuccessful) {
+                val errorMessage = response.extractErrorMessage()
+                errorMessage?.let {
+                    _errors.emit(it)
+                }
+                return@withContext false
+            }
+            return@withContext true
+
+        } catch (e: Exception) {
+            handleException(e, "Error sending forgot password request")
+            return@withContext false
         }
-
     }
 
-    private fun validateEmail(email: String): Error? {
-        if (email.isEmpty()) {
-            return Error("Email cannot be empty")
-        }
+    suspend fun resetPassword() = withContext(Dispatchers.IO) {
+        try {
+            validateOtp(otp)
+            validatePin(pin)
 
-        val emailRegex = Regex("[\\w-.]+@([\\w-]+\\.)+[\\w-]{2,4}")
-        if (!emailRegex.matches(email)) {
-            return Error("Invalid email format")
+            val request = PasswordResetRequest(otp, email, pin)
+            val response = Api.authService.resetPassword(request)
+            if (!response.isSuccessful) {
+                val errorMessage = response.extractErrorMessage()
+                errorMessage?.let {
+                    _errors.emit(it)
+                }
+            }
 
+        } catch (e: Exception) {
+            handleException(e, "Error reseting user password")
         }
-        return null
     }
-
-    private fun validatePassword(password: String): Error? {
-        if (password.length < MIN_PASSWORD_LENGTH) {
-            return Error(
-                "Password cannot be less than $MIN_PASSWORD_LENGTH characters long"
-            )
-        }
-
-        // TODO: check password strength
-        return null
-    }
-
-    private fun validateUsername(username: String): Error? {
-        if (username.length < MIN_NAME_LENGTH) {
-            return Error(
-                "Username too short. Minimum of $MIN_NAME_LENGTH characters acceptable"
-            )
-        }
-        return null
-    }
-
-    private fun validateOtpNumber(otpNumber: String): Error? {
-        if (otpNumber.length != MIN_OTP_LENGTH) {
-            return Error(
-                "Invalid OTP length"
-            )
-        }
-        return null
-    }
-
 }

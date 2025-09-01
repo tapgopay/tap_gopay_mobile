@@ -1,13 +1,13 @@
 package com.example.tapgopay.screens.widgets.payment_flow
 
 import android.Manifest
-import android.content.Context
 import android.content.pm.PackageManager
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,11 +15,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -35,47 +39,131 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.example.tapgopay.R
-import com.example.tapgopay.data.Contact
-import com.example.tapgopay.screens.widgets.ContactCard
+import com.example.tapgopay.data.Recipient
+import com.example.tapgopay.remote.Contact
+import com.example.tapgopay.screens.widgets.ContactCardRow
 import com.example.tapgopay.screens.widgets.Navbar
+import com.example.tapgopay.ui.theme.TapGoPayTheme
 
 @Composable
 fun SelectPaymentRecipient(
-    contactList: List<Contact>,
-    selectedContact: Contact?,
-    onSelectContact: (Contact) -> Unit,
-    refreshContactList: (context: Context) -> Unit,
-    prev: () -> Unit,
+    contacts: List<Contact>,
+    onContinue: (Recipient) -> Unit,
+    refreshContacts: () -> Unit,
+    goBack: () -> Unit,
 ) {
     Column(
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        verticalArrangement = Arrangement.spacedBy(24.dp),
         modifier = Modifier
             .fillMaxSize()
             .padding(16.dp),
     ) {
         Navbar(
-            title = "Who would you like to pay?",
-            prev = prev,
+            title = "Send money to?",
+            goBack = goBack,
+        )
+
+        var receiver by remember { mutableStateOf<Recipient?>(null) }
+
+        // Select payment recipient via account number
+        OutlinedTextField(
+            value = receiver?.value ?: "",
+            onValueChange = {
+                receiver = Recipient.AccountNumber(it)
+            },
+            modifier = Modifier.padding(horizontal = 12.dp),
+            label = {
+                Text(
+                    "Receiver's Account Number",
+                    style = MaterialTheme.typography.titleMedium,
+                )
+            }
         )
 
         val context = LocalContext.current
-        var filter by remember { mutableStateOf("all") }
+        var selectedContact by remember { mutableStateOf<Contact?>(null) }
+
+        Box(
+            modifier = Modifier.weight(1f),
+        ) {
+            // Select payment recipient via phone number
+            SelectFromContactList(
+                contacts = contacts,
+                selectedContact = selectedContact,
+                onSelectContact = {
+                    selectedContact = it
+                    receiver = Recipient.PhoneNumber(it.phoneNo)
+                },
+                refreshContacts = {
+                    refreshContacts()
+                }
+            )
+
+            Box(
+                modifier = Modifier.align(Alignment.BottomCenter)
+            ) {
+                ElevatedButton(
+                    onClick = {
+                        if (receiver == null) {
+                            Toast.makeText(
+                                context, "Please select who you would like to send money to",
+                                Toast.LENGTH_LONG
+                            ).show()
+                            return@ElevatedButton
+                        }
+
+                        receiver?.let {
+                            onContinue(it)
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp),
+                    shape = RoundedCornerShape(50),
+                    colors = ButtonDefaults.elevatedButtonColors().copy(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                    )
+                ) {
+                    Text(
+                        "Continue",
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.padding(vertical = 16.dp),
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun SelectFromContactList(
+    contacts: List<Contact>,
+    selectedContact: Contact?,
+    onSelectContact: (Contact) -> Unit,
+    refreshContacts: () -> Unit,
+) {
+    Column {
+        val context = LocalContext.current
+        var filter by remember { mutableStateOf("All") }
 
         Row(
             horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp),
+                .fillMaxWidth(),
         ) {
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(12.dp),
             ) {
                 FilterChip(
-                    onClick = { filter = "all" },
+                    onClick = { filter = "All" },
                     label = {
                         Text("All")
                     },
-                    selected = filter == "all",
+                    shape = RoundedCornerShape(50),
+                    selected = filter == "All",
                     colors = FilterChipDefaults.filterChipColors().copy(
                         selectedContainerColor = MaterialTheme.colorScheme.primary,
                         selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
@@ -83,11 +171,12 @@ fun SelectPaymentRecipient(
                 )
 
                 FilterChip(
-                    onClick = { filter = "favorites" },
+                    onClick = { filter = "Favorites" },
                     label = {
                         Text("Favorites")
                     },
-                    selected = filter == "favorites",
+                    shape = RoundedCornerShape(50),
+                    selected = filter == "Favorites",
                     colors = FilterChipDefaults.filterChipColors().copy(
                         selectedContainerColor = MaterialTheme.colorScheme.primary,
                         selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
@@ -99,7 +188,7 @@ fun SelectPaymentRecipient(
                 ActivityResultContracts.RequestPermission()
             ) { isGranted: Boolean ->
                 if (isGranted) {
-                    refreshContactList(context)
+                    refreshContacts()
 
                 } else {
                     // Permission denied
@@ -122,7 +211,7 @@ fun SelectPaymentRecipient(
                         when (perm) {
                             PackageManager.PERMISSION_GRANTED -> {
                                 // Do some work that requires permission
-                                refreshContactList(context)
+                                refreshContacts()
                             }
 
                             else -> {
@@ -153,7 +242,7 @@ fun SelectPaymentRecipient(
         }
 
         // Contact list
-        if (contactList.isEmpty()) {
+        if (contacts.isEmpty()) {
             Column(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -178,24 +267,24 @@ fun SelectPaymentRecipient(
                 )
 
             }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .padding(vertical = 4.dp)
-            ) {
-                items(
-                    count = contactList.size,
-                ) { index ->
-                    val contact = contactList[index]
+            return@Column
+        }
 
-                    ContactCard(
-                        contact = contact,
-                        isSelected = selectedContact == contact,
-                        onSelect = {
-                            onSelectContact(contact)
-                        }
-                    )
-                }
+        LazyColumn(
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            items(
+                count = contacts.size,
+            ) { index ->
+                val contact = contacts[index]
+
+                ContactCardRow(
+                    contact = contact,
+                    isSelected = selectedContact?.phoneNo == contact.phoneNo,
+                    onClick = {
+                        onSelectContact(contact)
+                    }
+                )
             }
         }
     }
@@ -206,19 +295,18 @@ fun SelectPaymentRecipient(
 fun PreviewSelectPaymentRecipient() {
     val johnDoe = Contact("John Doe", "123456789")
 
-    val contactList = listOf<Contact>(
+    val contacts = listOf<Contact>(
         johnDoe,
         Contact("Mary Jane", "987654321"),
         Contact("Miguel Rodrigues", "000000000")
     )
 
-    MaterialTheme {
+    TapGoPayTheme {
         SelectPaymentRecipient(
-            contactList = contactList,
-            selectedContact = johnDoe,
-            onSelectContact = {},
-            refreshContactList = {},
-            prev = {},
+            contacts = contacts,
+            onContinue = {},
+            refreshContacts = {},
+            goBack = {},
         )
     }
 }

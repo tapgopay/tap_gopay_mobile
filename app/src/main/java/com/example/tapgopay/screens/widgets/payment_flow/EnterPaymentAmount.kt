@@ -10,65 +10,69 @@ import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.tapgopay.data.Contact
-import com.example.tapgopay.screens.widgets.Avatar
+import com.example.tapgopay.remote.Contact
+import com.example.tapgopay.screens.widgets.ContactCardColumn
+import com.example.tapgopay.screens.widgets.DialPad
 import com.example.tapgopay.screens.widgets.Navbar
-import com.example.tapgopay.screens.widgets.SoftKeyboard
+import com.example.tapgopay.ui.theme.TapGoPayTheme
+import com.example.tapgopay.utils.formatAmount
 
 @Composable
 fun EnterPaymentAmount(
-    amount: String,
-    onNewAmount: (String) -> Unit,
-    contactDetails: Contact,
-    prev: () -> Unit,
-    next: () -> Unit,
+    receiver: Contact,
+    goBack: () -> Unit,
+    onContinue: (String) -> Unit,
 ) {
+    var amount by remember { mutableStateOf("") }
+
     Column(
-        modifier = Modifier
-            .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Navbar(
-            title = "Enter amount to pay",
-            prev = prev,
+            title = "Enter amount to send",
+            goBack = goBack,
         )
 
-        Avatar(
-            contact = contactDetails,
+        ContactCardColumn(
+            contact = receiver,
         )
 
-        Text(
-            "KSH $amount",
-            style = MaterialTheme.typography.displaySmall,
-        )
-
-        SoftKeyboard(
+        DialPad(
+            modifier = Modifier
+                .fillMaxWidth()
+                .weight(1f),
             value = amount,
             onValueChange = { newValue ->
-                onNewAmount(newValue)
+                amount = newValue
             }
         )
 
         ElevatedButton(
-            onClick = next,
+            onClick = {
+                onContinue(amount)
+            },
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(8.dp),
+                .padding(vertical = 12.dp, horizontal = 24.dp),
             colors = ButtonDefaults.elevatedButtonColors().copy(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
             ),
-            shape = RoundedCornerShape(8.dp),
+            shape = RoundedCornerShape(50),
         ) {
             Text(
-                "Pay KSH $amount",
-                style = MaterialTheme.typography.bodyLarge,
+                "Send KSH ${formatAmount(amount)}",
+                style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.padding(vertical = 12.dp),
             )
         }
@@ -78,15 +82,17 @@ fun EnterPaymentAmount(
 @Preview(showBackground = true, device = Devices.PIXEL)
 @Composable
 fun PreviewEnterPaymentAmount() {
-    val receiver = Contact("Mary Jane", "123456789")
+    val receiver = Contact(
+        name = "Mary Jane",
+        cardNo = "123456789",
+        phoneNo = "+254 120811682"
+    )
 
-    MaterialTheme {
+    TapGoPayTheme {
         EnterPaymentAmount(
-            amount = "",
-            onNewAmount = {},
-            contactDetails = receiver,
-            prev = {},
-            next = {},
+            receiver = receiver,
+            goBack = {},
+            onContinue = {},
         )
     }
 }

@@ -26,13 +26,13 @@ android {
                 "proguard-rules.pro"
             )
 
-            buildConfigField("String", "REMOTE_URL", "${project.findProperty("REMOTE_URL")}")
-            buildConfigField("String", "ANDROID_API_KEY", "${project.findProperty("ANDROID_API_KEY")}")
+            buildConfigField("String", "REMOTE_URL", "\"http://localhost:5000\"")
+            buildConfigField("String", "ANDROID_API_KEY", "\"MFNFK2dKaSk2ZlwrfDA4Ly9kM3Bqa2JeVnoraCVrRCw=\"")
         }
 
         debug {
-            buildConfigField("String", "REMOTE_URL", "\"${project.findProperty("REMOTE_URL")}\"")
-            buildConfigField("String", "ANDROID_API_KEY", "\"${project.findProperty("ANDROID_API_KEY")}\"")
+            buildConfigField("String", "REMOTE_URL", "\"http://localhost:5000\"")
+            buildConfigField("String", "ANDROID_API_KEY", "\"MFNFK2dKaSk2ZlwrfDA4Ly9kM3Bqa2JeVnoraCVrRCw=\"")
         }
     }
     compileOptions {
@@ -69,6 +69,9 @@ dependencies {
     // OkHttp3
     implementation("com.squareup.okhttp3:okhttp:5.1.0")
     implementation(libs.androidx.ui.text.google.fonts)
+
+    // Cryptography
+    implementation("org.bouncycastle:bcprov-jdk18on:1.78.1")
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
