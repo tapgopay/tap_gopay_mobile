@@ -85,15 +85,17 @@ fun EnterPinNumber(
                             if (isColored) Color.Transparent else MaterialTheme.colorScheme.scrim
                         val backgroundColor = when {
                             isColored -> {
-                                if(authStatus == Status.Success) {
+                                if (authStatus == Status.Success) {
                                     MaterialTheme.colorScheme.tertiary
                                 } else {
                                     MaterialTheme.colorScheme.primary
                                 }
                             }
+
                             else -> Color.Transparent
                         }
-                        val isAuthenticating = authStatus == Status.Loading || authStatus == Status.Success
+                        val isAuthenticating =
+                            authStatus == Status.Loading || authStatus == Status.Success
 
                         val animatedWidth by animateDpAsState(
                             targetValue = if (isAuthenticating) 28.dp else 24.dp,

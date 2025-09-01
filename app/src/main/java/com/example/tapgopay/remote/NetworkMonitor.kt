@@ -1,4 +1,4 @@
-package com.example.tapgopay.data
+package com.example.tapgopay.remote
 
 import android.content.Context
 import android.net.ConnectivityManager

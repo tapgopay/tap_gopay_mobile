@@ -111,7 +111,7 @@ fun SelectPaymentRecipient(
                 }
             }
 
-            Row() {
+            Row {
                 IconButton(
                     onClick = {
                         // Check permission to read contacts
@@ -212,7 +212,7 @@ fun PreviewSelectPaymentRecipient() {
         Contact("Miguel Rodrigues", "000000000")
     )
 
-    MaterialTheme() {
+    MaterialTheme {
         SelectPaymentRecipient(
             contactList = contactList,
             selectedContact = johnDoe,

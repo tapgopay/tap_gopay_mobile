@@ -7,6 +7,12 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.tapgopay.MainActivity
+import com.example.tapgopay.remote.Api
+import com.example.tapgopay.remote.EmailDto
+import com.example.tapgopay.remote.LoginDto
+import com.example.tapgopay.remote.MessageResponse
+import com.example.tapgopay.remote.PasswordResetDto
+import com.example.tapgopay.remote.RegisterDto
 import com.google.gson.Gson
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -26,9 +32,9 @@ class AuthViewModel : ViewModel() {
         private const val MIN_NAME_LENGTH = 3
         private const val MIN_PASSWORD_LENGTH = 6
         const val MIN_OTP_LENGTH = 4
-
-        private val api: ApiService = MainActivity.retrofitService
     }
+
+    private val api = Api.authService
 
     var username by mutableStateOf("")
     var email by mutableStateOf("")
@@ -50,7 +56,7 @@ class AuthViewModel : ViewModel() {
 //        verifyPreviousLogin()
     }
 
-    private suspend fun handleResponse(response: Response<ApiResponse>) {
+    private suspend fun handleResponse(response: Response<MessageResponse>) {
         if (response.isSuccessful) {
             authState.value = AuthState.Success
             Log.d(MainActivity.TAG, "Response successful; $response")
@@ -66,7 +72,8 @@ class AuthViewModel : ViewModel() {
                 return
             }
 
-            val apiResponse: ApiResponse = Gson().fromJson(responseString, ApiResponse::class.java)
+            val apiResponse: MessageResponse =
+                Gson().fromJson(responseString, MessageResponse::class.java)
             val errors = apiResponse.errors?.values
             if (errors == null) {
                 _authErrors.emit(
@@ -106,7 +113,7 @@ class AuthViewModel : ViewModel() {
             val response = api.loginUser(credentials)
             handleResponse(response)
 
-        } catch(e: IOException) {
+        } catch (e: IOException) {
             Log.d(MainActivity.TAG, "Error contacting backend server; ${e.message}")
             _authErrors.emit(
                 Error("Error contacting backend server")
@@ -153,7 +160,7 @@ class AuthViewModel : ViewModel() {
             val response = api.registerUser(credentials)
             handleResponse(response)
 
-        } catch(e: IOException) {
+        } catch (e: IOException) {
             Log.d(MainActivity.TAG, "Error contacting backend server; ${e.message}")
             _authErrors.emit(
                 Error("Error contacting backend server")
@@ -174,7 +181,7 @@ class AuthViewModel : ViewModel() {
                 authState.value = AuthState.Fail
                 Log.d(MainActivity.TAG, "verifyPreviousLogin failed; $response")
             }
-        }catch(e: IOException) {
+        } catch (e: IOException) {
             Log.d(MainActivity.TAG, "Error contacting backend server; ${e.message}")
             _authErrors.emit(
                 Error("Error contacting backend server")
@@ -194,7 +201,7 @@ class AuthViewModel : ViewModel() {
             val response = api.forgotPassword(request)
             handleResponse(response)
 
-        } catch(e: IOException) {
+        } catch (e: IOException) {
             Log.d(MainActivity.TAG, "Error contacting backend server; ${e.message}")
             _authErrors.emit(
                 Error("Error contacting backend server")
@@ -220,7 +227,7 @@ class AuthViewModel : ViewModel() {
             val response = api.resetPassword(request)
             handleResponse(response)
 
-        } catch(e: IOException) {
+        } catch (e: IOException) {
             Log.d(MainActivity.TAG, "Error contacting backend server; ${e.message}")
             _authErrors.emit(
                 Error("Error contacting backend server")

@@ -13,9 +13,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.example.tapgopay.data.ApiService
-import com.example.tapgopay.data.NetworkMonitor
-import com.example.tapgopay.data.getRetrofitBuilder
+import com.example.tapgopay.remote.NetworkMonitor
 import com.example.tapgopay.screens.ForgotPasswordScreen
 import com.example.tapgopay.screens.HomeScreen
 import com.example.tapgopay.screens.LoginScreen
@@ -24,22 +22,20 @@ import com.example.tapgopay.screens.RegisterScreen
 import com.example.tapgopay.screens.ResetPasswordScreen
 import com.example.tapgopay.screens.Routes
 import com.example.tapgopay.ui.theme.TapGoPayTheme
-import retrofit2.Retrofit
 
 class MainActivity : ComponentActivity() {
     companion object {
         const val TAG: String = "TapGoPay"
+        const val SHARED_PREFERENCES: String = "SHARED_PREFERENCES"
+
+        lateinit var instance: MainActivity
         lateinit var networkMonitor: NetworkMonitor
-        lateinit var retrofitService: ApiService
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         networkMonitor = NetworkMonitor(this)
-        retrofitService = lazy {
-            val retrofitBuilder = getRetrofitBuilder(applicationContext)
-            retrofitBuilder.create(ApiService::class.java)
-        }.value
+        instance = this
 
         enableEdgeToEdge()
         setContent {
@@ -85,7 +81,7 @@ class MainActivity : ComponentActivity() {
                         composable(route = Routes.ProfileScreen.name) {
                             ProfileScreen(
                                 navigateToHomeScreen = {
-                                    navController.navigate(route= Routes.HomeScreen.name)
+                                    navController.navigate(route = Routes.HomeScreen.name)
                                 }
                             )
                         }
@@ -103,9 +99,12 @@ class MainActivity : ComponentActivity() {
 
                         composable(
                             route = "${Routes.ResetPasswordScreen.name}/{email}",
-                            arguments = listOf(navArgument("email") { type = NavType.StringType })  // Specify argument type
+                            arguments = listOf(navArgument("email") {
+                                type = NavType.StringType
+                            })  // Specify argument type
                         ) { backStackEntry ->
-                            val email = backStackEntry.arguments?.getString("email") ?: ""  // Retrieve argument
+                            val email = backStackEntry.arguments?.getString("email")
+                                ?: ""  // Retrieve argument
 
                             ResetPasswordScreen(
                                 email = email,

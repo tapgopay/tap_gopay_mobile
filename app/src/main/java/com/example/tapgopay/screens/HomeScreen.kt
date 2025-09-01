@@ -47,8 +47,8 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.example.tapgopay.R
 import com.example.tapgopay.screens.widgets.Menu
-import com.example.tapgopay.screens.widgets.payment_flow.PaymentFlow
 import com.example.tapgopay.screens.widgets.Transactions
+import com.example.tapgopay.screens.widgets.payment_flow.PaymentFlow
 import com.example.tapgopay.ui.theme.TapGoPayTheme
 import kotlinx.coroutines.launch
 
@@ -144,7 +144,7 @@ fun HomeScreen(
 
             Transactions()
 
-            if(viewAllTransactions) {
+            if (viewAllTransactions) {
                 ModalBottomSheet(
                     onDismissRequest = {
                         viewAllTransactions = false
@@ -161,7 +161,7 @@ fun HomeScreen(
                 }
             }
 
-            if(startTransfer) {
+            if (startTransfer) {
                 ModalBottomSheet(
                     onDismissRequest = {
                         startTransfer = false

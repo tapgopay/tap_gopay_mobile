@@ -116,7 +116,7 @@ fun SoftKeyboard(
                     .weight(1f)
                     .height(48.dp)
                     .background(color = Color.Transparent, shape = CircleShape)
-            ){
+            ) {
                 Icon(
                     painter = painterResource(R.drawable.backspace_24dp),
                     contentDescription = "Backspace"

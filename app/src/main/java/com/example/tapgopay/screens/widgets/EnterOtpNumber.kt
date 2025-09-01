@@ -76,12 +76,16 @@ fun EnterOtpNumber(
                         val backgroundColor =
                             if (isColored) MaterialTheme.colorScheme.tertiary else Color.Transparent
 
-                        val otpChar: String = otpNumber.toCharArray().getOrNull(index)?.toString() ?: ""
+                        val otpChar: String =
+                            otpNumber.toCharArray().getOrNull(index)?.toString() ?: ""
 
                         Box(
                             modifier = Modifier
                                 .border(2.dp, color = borderColor, shape = RoundedCornerShape(8.dp))
-                                .background(color = backgroundColor, shape = RoundedCornerShape(8.dp))
+                                .background(
+                                    color = backgroundColor,
+                                    shape = RoundedCornerShape(8.dp)
+                                )
                                 .size(48.dp),
                             contentAlignment = Alignment.Center,
                         ) {
@@ -108,7 +112,7 @@ fun EnterOtpNumber(
             SoftKeyboard(
                 value = otpNumber,
                 onValueChange = { newValue ->
-                    if(newValue.isNotEmpty() && newValue.last() == '.') {
+                    if (newValue.isNotEmpty() && newValue.last() == '.') {
                         return@SoftKeyboard
                     }
 

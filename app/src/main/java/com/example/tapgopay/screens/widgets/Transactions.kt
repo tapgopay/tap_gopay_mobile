@@ -29,9 +29,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.tapgopay.R
 import com.example.tapgopay.data.TransactionType
 import java.util.Locale
-import com.example.tapgopay.R
 import kotlin.random.Random
 
 @Composable
@@ -39,7 +39,7 @@ fun Transactions() {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(horizontal = 8.dp, vertical=8.dp)
+            .padding(horizontal = 8.dp, vertical = 8.dp)
     ) {
         Text(
             "Transactions",
@@ -58,7 +58,7 @@ fun Transactions() {
                 .verticalScroll(scrollState)
         ) {
             repeat(9) {
-                val transactionType = if(Random.nextBoolean()) {
+                val transactionType = if (Random.nextBoolean()) {
                     TransactionType.Send
                 } else {
                     TransactionType.Receive
@@ -122,12 +122,12 @@ fun TransactionCard(
                         style = MaterialTheme.typography.titleMedium,
                     )
 
-                    val backgroundColor = if(transactionType == TransactionType.Send) {
+                    val backgroundColor = if (transactionType == TransactionType.Send) {
                         MaterialTheme.colorScheme.error
                     } else {
                         MaterialTheme.colorScheme.tertiaryContainer
                     }
-                    val icon = if(transactionType == TransactionType.Send) {
+                    val icon = if (transactionType == TransactionType.Send) {
                         R.drawable.north_east_24dp
                     } else {
                         R.drawable.south_west_24dp
@@ -140,7 +140,7 @@ fun TransactionCard(
                             .padding(vertical = 4.dp)
                             .background(
                                 color = backgroundColor.copy(
-                                    alpha=0.2f,
+                                    alpha = 0.2f,
                                 ),
                                 shape = RoundedCornerShape(24.dp),
                             )
