@@ -74,8 +74,7 @@ fun SoftKeyboard(
                             return@clickable
                         }
 
-                        val newValue = "$value."
-                        onValueChange(newValue)
+                        onValueChange(value)
                     },
                 contentAlignment = Alignment.Center
             ) {

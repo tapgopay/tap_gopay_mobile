@@ -2,7 +2,7 @@ package com.example.tapgopay.screens
 
 enum class Routes {
     LoginScreen,
-    RegisterScreen,
+    SignUpScreen,
     HomeScreen,
     ProfileScreen,
     ForgotPasswordScreen,

@@ -5,36 +5,29 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import com.example.tapgopay.MainActivity
 import com.example.tapgopay.remote.Api
-import com.example.tapgopay.remote.EmailDto
-import com.example.tapgopay.remote.LoginDto
-import com.example.tapgopay.remote.MessageResponse
-import com.example.tapgopay.remote.PasswordResetDto
-import com.example.tapgopay.remote.RegisterDto
-import com.google.gson.Gson
+import com.example.tapgopay.remote.EmailRequest
+import com.example.tapgopay.remote.LoginRequest
+import com.example.tapgopay.remote.PasswordResetRequest
+import com.example.tapgopay.remote.RegisterRequest
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.launch
-import retrofit2.Response
+import kotlinx.coroutines.withContext
 import java.io.IOException
-
-data class Error(val message: String)
 
 enum class AuthState {
     Idle, Loading, Fail, Success
 }
 
-class AuthViewModel : ViewModel() {
+open class AuthViewModel : ViewModel() {
     companion object {
         private const val MIN_NAME_LENGTH = 3
         private const val MIN_PASSWORD_LENGTH = 6
         const val MIN_OTP_LENGTH = 4
     }
-
-    private val api = Api.authService
 
     var username by mutableStateOf("")
     var email by mutableStateOf("")
@@ -46,236 +39,196 @@ class AuthViewModel : ViewModel() {
     var authState = MutableStateFlow(AuthState.Idle)
         private set
 
-    private val _authErrors = MutableSharedFlow<Error>(extraBufferCapacity = 1)
-    val authErrors = _authErrors.asSharedFlow()
-
-    private val _ioErrors = MutableSharedFlow<Error>(extraBufferCapacity = 1)
-    val ioErrors = _ioErrors.asSharedFlow()
+    private val _errors = MutableSharedFlow<String>(extraBufferCapacity = 1)
+    val errors = _errors.asSharedFlow()
 
     init {
 //        verifyPreviousLogin()
     }
 
-    private suspend fun handleResponse(response: Response<MessageResponse>) {
-        if (response.isSuccessful) {
-            authState.value = AuthState.Success
-            Log.d(MainActivity.TAG, "Response successful; $response")
-
-        } else {
-            authState.value = AuthState.Fail
-            Log.d(MainActivity.TAG, "Response failed; $response")
-
-            val responseString: String = response.errorBody()?.string() ?: run {
-                _authErrors.emit(
-                    Error("Request failed with unknown error message")
-                )
-                return
-            }
-
-            val apiResponse: MessageResponse =
-                Gson().fromJson(responseString, MessageResponse::class.java)
-            val errors = apiResponse.errors?.values
-            if (errors == null) {
-                _authErrors.emit(
-                    Error(apiResponse.message)
-                )
-            } else {
-                errors.forEach { error ->
-                    _authErrors.emit(
-                        Error(error)
-                    )
+    private suspend fun handleException(e: Exception) {
+        when (e) {
+            is IllegalArgumentException -> {
+                e.message?.let {
+                    _errors.emit(it)
                 }
             }
-        }
-    }
 
-    fun loginUser() = viewModelScope.launch {
-        Log.d(MainActivity.TAG, "Attempting user login")
-
-        // Validate login form
-        val loginErrors: List<Error> = buildList {
-            add(validateEmail(email))
-            add(validatePassword(password))
-        }.filterNotNull()
-
-        if (loginErrors.isNotEmpty()) {
-            Log.d(MainActivity.TAG, "Login failed. Validation errors; $loginErrors")
-            loginErrors
-                .reversed() // Reversing this list so that the topmost field error is shown first
-                .forEach { error -> _authErrors.emit(error) }
-            return@launch
-        }
-
-        authState.value = AuthState.Loading
-
-        try {
-            val credentials = LoginDto(email, password)
-            val response = api.loginUser(credentials)
-            handleResponse(response)
-
-        } catch (e: IOException) {
-            Log.d(MainActivity.TAG, "Error contacting backend server; ${e.message}")
-            _authErrors.emit(
-                Error("Error contacting backend server")
-            )
-        }
-    }
-
-    fun registerUser() = viewModelScope.launch {
-        Log.d(MainActivity.TAG, "Attempting user registration")
-
-        // Validate register form
-        val registrationErrors: List<Error> = buildList {
-            add(validateUsername(username))
-            add(validateEmail(email))
-            add(validatePassword(password))
-
-            if (!agreedToTerms) {
-                add(
-                    Error("You must agree to terms and conditions before continuing")
-                )
+            is IOException -> {
+                Log.e(MainActivity.TAG, "${e.message}")
+                _errors.emit("Error contacting backend server")
             }
-        }.filterNotNull()
 
-        if (registrationErrors.isNotEmpty()) {
-            Log.d(
-                MainActivity.TAG,
-                "Registration failed. Validation errors; $registrationErrors"
-            )
-            registrationErrors
-                .reversed() // Reversing this list so that the topmost field error is shown first
-                .forEach { error -> _authErrors.emit(error) }
-            return@launch
+            else -> {
+                Log.e(MainActivity.TAG, "${e.message}")
+                _errors.emit("Unexpected error occurred")
+            }
         }
+    }
 
-        authState.value = AuthState.Loading
-
+    suspend fun loginUser(): Boolean = withContext(Dispatchers.IO) {
         try {
-            val credentials = RegisterDto(
+            Log.d(MainActivity.TAG, "Attempting user login")
+
+            validateEmail(email)
+            validatePassword(password)
+            authState.value = AuthState.Loading
+
+            val request = LoginRequest(email, password)
+            val response = Api.authService.loginUser(request)
+            if (response.isSuccessful) {
+                authState.value = AuthState.Success
+                return@withContext true
+            }
+
+            authState.value = AuthState.Fail
+            val loginErrors = response.extractErrorMessage()
+            loginErrors?.forEach { (_, value) ->
+                _errors.emit(value)
+            }
+            return@withContext false
+
+        } catch (e: Exception) {
+            handleException(e)
+            return@withContext false
+        }
+    }
+
+    suspend fun registerUser(): Boolean = withContext(Dispatchers.IO) {
+        try {
+            Log.d(MainActivity.TAG, "Attempting user registration")
+
+            validateUsername(username)
+            validateEmail(email)
+            validatePassword(password)
+            if (!agreedToTerms) {
+                _errors.emit("You must agree to terms and conditions before continuing")
+                return@withContext false
+            }
+            authState.value = AuthState.Loading
+
+            val request = RegisterRequest(
                 username = username,
                 email = email,
                 password = password,
                 phoneNumber = phoneNumber,
             )
-            val response = api.registerUser(credentials)
-            handleResponse(response)
+            val response = Api.authService.registerUser(request)
+            if (response.isSuccessful) {
+                authState.value = AuthState.Success
+                return@withContext true
+            }
 
-        } catch (e: IOException) {
-            Log.d(MainActivity.TAG, "Error contacting backend server; ${e.message}")
-            _authErrors.emit(
-                Error("Error contacting backend server")
-            )
+            authState.value = AuthState.Fail
+            val signupErrors = response.extractErrorMessage()
+            signupErrors?.forEach { (_, value) ->
+                _errors.emit(value)
+            }
+            return@withContext false
+
+        } catch (e: Exception) {
+            handleException(e)
+            return@withContext false
         }
     }
 
     // Attempts to login a user with their previous session.
     // Prevents the need for a user entering their password
     // every time they open the app
-    fun verifyPreviousLogin() = viewModelScope.launch {
+    suspend fun verifyPreviousLogin() = withContext(Dispatchers.IO) {
         try {
-            val response = api.verifyAuth()
+            val response = Api.authService.verifyAuth()
             if (response.isSuccessful) {
                 authState.value = AuthState.Success
-
             } else {
                 authState.value = AuthState.Fail
-                Log.d(MainActivity.TAG, "verifyPreviousLogin failed; $response")
+                val loginErrors = response.extractErrorMessage()
+                loginErrors?.forEach { (_, value) ->
+                    _errors.emit(value)
+                }
             }
-        } catch (e: IOException) {
-            Log.d(MainActivity.TAG, "Error contacting backend server; ${e.message}")
-            _authErrors.emit(
-                Error("Error contacting backend server")
-            )
+
+        } catch (e: Exception) {
+            handleException(e)
         }
     }
 
-    fun forgotPassword() = viewModelScope.launch {
-        val error: Error? = validateEmail(email)
-        error?.let {
-            _authErrors.emit(error)
-            return@launch
-        }
-
+    suspend fun forgotPassword(): Boolean = withContext(Dispatchers.IO) {
         try {
-            val request = EmailDto(email)
-            val response = api.forgotPassword(request)
-            handleResponse(response)
+            validateEmail(email)
 
-        } catch (e: IOException) {
-            Log.d(MainActivity.TAG, "Error contacting backend server; ${e.message}")
-            _authErrors.emit(
-                Error("Error contacting backend server")
-            )
-        }
-    }
-
-    fun resetPassword() = viewModelScope.launch {
-        val errors: List<Error> = buildList {
-            add(validateOtpNumber(otpNumber))
-            add(validatePassword(password))
-        }.filterNotNull()
-
-        if (errors.isNotEmpty()) {
-            errors.reversed().map { error ->
-                _authErrors.emit(error)
+            val request = EmailRequest(email)
+            val response = Api.authService.forgotPassword(request)
+            if (response.isSuccessful) {
+                authState.value = AuthState.Success
+                return@withContext true
             }
-            return@launch
+
+            authState.value = AuthState.Fail
+            val responseErrors = response.extractErrorMessage()
+            responseErrors?.forEach { (_, value) ->
+                _errors.emit(value)
+            }
+            return@withContext false
+
+        } catch (e: Exception) {
+            handleException(e)
+            return@withContext false
         }
-
-        try {
-            val request = PasswordResetDto(otpNumber, email, password)
-            val response = api.resetPassword(request)
-            handleResponse(response)
-
-        } catch (e: IOException) {
-            Log.d(MainActivity.TAG, "Error contacting backend server; ${e.message}")
-            _authErrors.emit(
-                Error("Error contacting backend server")
-            )
-        }
-
     }
 
-    private fun validateEmail(email: String): Error? {
+    suspend fun resetPassword() = withContext(Dispatchers.IO) {
+        try {
+            validateOtpNumber(otpNumber)
+            validatePassword(password)
+
+            val request = PasswordResetRequest(otpNumber, email, password)
+            val response = Api.authService.resetPassword(request)
+            if (response.isSuccessful) {
+                authState.value = AuthState.Success
+            } else {
+                authState.value = AuthState.Fail
+                val responseErrors = response.extractErrorMessage()
+                responseErrors?.forEach { (_, value) ->
+                    _errors.emit(value)
+                }
+            }
+
+        } catch (e: Exception) {
+            handleException(e)
+        }
+    }
+
+    private fun validateEmail(email: String) {
         if (email.isEmpty()) {
-            return Error("Email cannot be empty")
+            throw IllegalArgumentException("Email cannot be empty")
         }
 
         val emailRegex = Regex("[\\w-.]+@([\\w-]+\\.)+[\\w-]{2,4}")
         if (!emailRegex.matches(email)) {
-            return Error("Invalid email format")
-
+            throw IllegalArgumentException("Invalid email format")
         }
-        return null
     }
 
-    private fun validatePassword(password: String): Error? {
+    private fun validatePassword(password: String) {
         if (password.length < MIN_PASSWORD_LENGTH) {
-            return Error(
+            throw IllegalArgumentException(
                 "Password cannot be less than $MIN_PASSWORD_LENGTH characters long"
             )
         }
 
         // TODO: check password strength
-        return null
     }
 
-    private fun validateUsername(username: String): Error? {
+    private fun validateUsername(username: String) {
         if (username.length < MIN_NAME_LENGTH) {
-            return Error(
-                "Username too short. Minimum of $MIN_NAME_LENGTH characters acceptable"
-            )
+            throw IllegalArgumentException("Username too short. Minimum of $MIN_NAME_LENGTH characters acceptable")
         }
-        return null
     }
 
-    private fun validateOtpNumber(otpNumber: String): Error? {
+    private fun validateOtpNumber(otpNumber: String) {
         if (otpNumber.length != MIN_OTP_LENGTH) {
-            return Error(
-                "Invalid OTP length"
-            )
+            throw IllegalArgumentException("Invalid OTP length")
         }
-        return null
     }
-
 }

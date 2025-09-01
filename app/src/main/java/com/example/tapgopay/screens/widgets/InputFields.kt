@@ -1,4 +1,4 @@
-package com.example.tapgopay.screens
+package com.example.tapgopay.screens.widgets
 
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.layout.Arrangement
@@ -8,16 +8,13 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
-import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,7 +31,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.tapgopay.R
-import com.example.tapgopay.utils.titlecase
+
 
 @Composable
 fun textFieldColors() = TextFieldDefaults.colors().copy(
@@ -47,7 +44,7 @@ fun textFieldColors() = TextFieldDefaults.colors().copy(
 
 @Composable
 fun InputField(
-    labelText: String,
+    label: String,
     value: String,
     onValueChanged: (String) -> Unit,
     @DrawableRes leadingIconId: Int? = null,
@@ -55,12 +52,12 @@ fun InputField(
 ) {
     Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(8.dp),
+            .fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
         Text(
-            text = labelText,
-            style = MaterialTheme.typography.bodyLarge,
+            text = label,
+            style = MaterialTheme.typography.titleMedium,
         )
 
         TextField(
@@ -69,7 +66,7 @@ fun InputField(
             modifier = Modifier
                 .fillMaxWidth()
                 .shadow(elevation = 8.dp, shape = RoundedCornerShape(8.dp)),
-            textStyle = MaterialTheme.typography.bodyLarge,
+            textStyle = MaterialTheme.typography.titleMedium,
             leadingIcon = {
                 // Display leading icon if leadingIconId is not null
                 leadingIconId?.let {
@@ -92,22 +89,21 @@ fun InputField(
 
 @Composable
 fun PasswordField(
-    labelText: String,
+    label: String,
     value: String,
     onValueChanged: (String) -> Unit,
-    navigateToForgotPasswordScreen: (() -> Unit)? = null,
+    onForgotPassword: (() -> Unit)? = null,
 ) {
     var passwordVisible: Boolean by remember { mutableStateOf(false) }
 
     Column(
-        verticalArrangement = Arrangement.Center,
+        verticalArrangement = Arrangement.spacedBy(8.dp),
         modifier = Modifier
             .fillMaxWidth()
-            .padding(8.dp)
     ) {
         Text(
-            text = labelText,
-            style = MaterialTheme.typography.bodyLarge,
+            text = label,
+            style = MaterialTheme.typography.titleMedium,
         )
 
         TextField(
@@ -116,7 +112,7 @@ fun PasswordField(
             modifier = Modifier
                 .fillMaxWidth()
                 .shadow(elevation = 8.dp, shape = RoundedCornerShape(8.dp)),
-            textStyle = MaterialTheme.typography.bodyLarge,
+            textStyle = MaterialTheme.typography.titleMedium,
             leadingIcon = {
                 Icon(
                     painter = painterResource(R.drawable.lock_24dp),
@@ -147,17 +143,17 @@ fun PasswordField(
             colors = textFieldColors(),
         )
 
-        navigateToForgotPasswordScreen?.let {
+        onForgotPassword?.let {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
             ) {
                 TextButton(
-                    onClick = navigateToForgotPasswordScreen,
+                    onClick = onForgotPassword,
                 ) {
                     Text(
                         text = "Forgot Password?",
-                        style = MaterialTheme.typography.labelLarge,
+                        style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold,
                     )
@@ -167,36 +163,12 @@ fun PasswordField(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun ErrorMessage(
-    message: String,
-    onDismissRequest: () -> Unit,
-) {
-    val sheetState = rememberModalBottomSheetState()
-
-    ModalBottomSheet(
-        onDismissRequest = onDismissRequest,
-        shape = RoundedCornerShape(4.dp),
-        sheetState = sheetState,
-        dragHandle = null,
-        containerColor = MaterialTheme.colorScheme.errorContainer,
-        contentColor = MaterialTheme.colorScheme.onErrorContainer,
-    ) {
-        Text(
-            text = message.titlecase(),
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.padding(24.dp),
-        )
-    }
-}
-
 @Preview(showBackground = true)
 @Composable
 fun PreviewInputField() {
     MaterialTheme {
         InputField(
-            labelText = "Enter Username",
+            label = "Enter Username",
             leadingIconId = R.drawable.person_24dp,
             value = "Death By Romy",
             onValueChanged = {},
@@ -209,9 +181,10 @@ fun PreviewInputField() {
 fun PreviewPasswordField() {
     MaterialTheme {
         PasswordField(
-            labelText = "Enter Password",
+            label = "Enter Password",
             value = "NoMercy",
             onValueChanged = {},
+            onForgotPassword = {}
         )
     }
 }

@@ -26,13 +26,13 @@ android {
                 "proguard-rules.pro"
             )
 
-            buildConfigField("String", "REMOTE_URL", "${project.findProperty("REMOTE_URL")}")
-            buildConfigField("String", "ANDROID_API_KEY", "${project.findProperty("ANDROID_API_KEY")}")
+            buildConfigField("String", "REMOTE_URL", "\"http://localhost:5000\"")
+            buildConfigField("String", "ANDROID_API_KEY", "\"MFNFK2dKaSk2ZlwrfDA4Ly9kM3Bqa2JeVnoraCVrRCw=\"")
         }
 
         debug {
-            buildConfigField("String", "REMOTE_URL", "\"${project.findProperty("REMOTE_URL")}\"")
-            buildConfigField("String", "ANDROID_API_KEY", "\"${project.findProperty("ANDROID_API_KEY")}\"")
+            buildConfigField("String", "REMOTE_URL", "\"http://localhost:5000\"")
+            buildConfigField("String", "ANDROID_API_KEY", "\"MFNFK2dKaSk2ZlwrfDA4Ly9kM3Bqa2JeVnoraCVrRCw=\"")
         }
     }
     compileOptions {
