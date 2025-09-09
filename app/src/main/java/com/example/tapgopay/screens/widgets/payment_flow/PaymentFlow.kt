@@ -19,7 +19,7 @@ import com.example.tapgopay.data.AppViewModel
 import com.example.tapgopay.data.toContact
 import com.example.tapgopay.data.validateAmount
 import com.example.tapgopay.remote.CreditCard
-import com.example.tapgopay.remote.Transaction
+import com.example.tapgopay.remote.TransactionResult
 import com.example.tapgopay.screens.widgets.EnterPinNumber
 import kotlinx.coroutines.launch
 
@@ -38,7 +38,7 @@ fun PaymentFlow(
             .fillMaxSize()
             .padding(horizontal = 12.dp)
     ) {
-        var transactionResult by remember { mutableStateOf<Transaction?>(null) }
+        var transactionResult by remember { mutableStateOf<TransactionResult?>(null) }
 
         when (index) {
             0 -> {

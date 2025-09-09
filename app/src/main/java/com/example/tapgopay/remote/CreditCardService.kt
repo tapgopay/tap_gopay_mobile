@@ -22,13 +22,12 @@ data class CreditCard(
 )
 
 data class Contact(
-    val name: String = "",
+    val username: String = "",
     @SerializedName("card_no") val cardNo: String = "",
     @SerializedName("phone_no") val phoneNo: String = "",
 )
 
-data class Transaction(
-    @SerializedName("transaction_id") val transactionId: String? = null, // Will be omitted if null
+data class TransactionRequest(
     val sender: String,
     val receiver: String,
     val amount: Double,
@@ -36,12 +35,31 @@ data class Transaction(
     var signature: String, // Base64-encoded string
 )
 
-fun Transaction.isSuccessful(): Boolean {
+fun TransactionRequest.asResult(): TransactionResult {
+    return TransactionResult(
+        sender = Contact(cardNo = this.sender),
+        receiver = Contact(cardNo = this.receiver),
+        amount = this.amount,
+        createdAt = this.createdAt,
+        signature = this.signature,
+    )
+}
+
+data class TransactionResult(
+    @SerializedName("transaction_id") val transactionId: String? = null, // Will be omitted if null
+    val sender: Contact,
+    val receiver: Contact,
+    val amount: Double,
+    @SerializedName("created_at") val createdAt: LocalDateTime = LocalDateTime.now(),
+    var signature: String, // Base64-encoded string
+)
+
+fun TransactionResult.isSuccessful(): Boolean {
     return this.transactionId != null
 }
 
-fun Transaction.isIncoming(): Boolean {
-    return this.receiver == alice.cardNo || this.receiver == alice.phoneNo
+fun TransactionResult.isIncoming(): Boolean {
+    return this.receiver.cardNo == alice.cardNo || this.receiver.phoneNo == alice.phoneNo
 }
 
 interface CreditCardService {
@@ -61,5 +79,5 @@ interface CreditCardService {
     suspend fun activateCreditCard(@Path("card_no") cardNo: String): Response<MessageResponse>
 
     @POST("/transfer-funds")
-    suspend fun transferFunds(@Body req: Transaction): Response<Transaction>
+    suspend fun transferFunds(@Body req: TransactionRequest): Response<TransactionResult>
 }

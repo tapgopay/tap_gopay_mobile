@@ -15,9 +15,6 @@ import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -29,8 +26,7 @@ import androidx.compose.ui.unit.dp
 import com.example.tapgopay.R
 import com.example.tapgopay.data.alice
 import com.example.tapgopay.data.generateRandomTransactions
-import com.example.tapgopay.remote.Contact
-import com.example.tapgopay.remote.Transaction
+import com.example.tapgopay.remote.TransactionResult
 import com.example.tapgopay.remote.isSuccessful
 import com.example.tapgopay.screens.widgets.ContactCardColumn
 import com.example.tapgopay.screens.widgets.Navbar
@@ -40,7 +36,7 @@ import com.example.tapgopay.utils.formatAmount
 
 @Composable
 fun TransactionReceipt(
-    transaction: Transaction,
+    transaction: TransactionResult,
     goBack: () -> Unit,
     done: () -> Unit,
 ) {
@@ -89,11 +85,8 @@ fun TransactionReceipt(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            val contact by remember {
-                mutableStateOf(Contact(cardNo = transaction.receiver))
-            }
             ContactCardColumn(
-                contact = contact
+                contact = transaction.receiver
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -151,7 +144,7 @@ fun PreviewPaymentConfirmation() {
     TapGoPayTheme {
         val transactions = generateRandomTransactions()
         val transaction =
-            transactions.find { it.sender == alice.cardNo || it.sender == alice.phoneNo }
+            transactions.find { it.sender.cardNo == alice.cardNo || it.sender.phoneNo == alice.phoneNo }
 
         transaction?.let {
             TransactionReceipt(

@@ -60,3 +60,14 @@ fun formatDatetime(dateTime: LocalDateTime): String {
     val formatted = dateTime.format(formatter)
     return "$daysPast $formatted"
 }
+
+fun String.ifEmptyTryDefaults(vararg values: String): String {
+    if (this.isNotEmpty()) return this
+
+    for (value in values) {
+        if (value.isNotEmpty()) {
+            return value
+        }
+    }
+    return ""
+}

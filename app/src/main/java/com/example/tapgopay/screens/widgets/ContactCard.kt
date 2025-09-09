@@ -58,7 +58,7 @@ fun ContactCardColumn(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                contact.name,
+                contact.username,
                 style = MaterialTheme.typography.titleLarge
             )
             Text(
@@ -83,7 +83,7 @@ fun ContactCardRow(
         if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface
     val contentColor =
         if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.scrim
-    contact.name
+    contact.username
 
     Card(
         colors = CardDefaults.cardColors().copy(
@@ -112,7 +112,7 @@ fun ContactCardRow(
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
-                        contact.name.first().uppercase(),
+                        contact.username.first().uppercase(),
                         style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.SemiBold,
                         ),
@@ -121,7 +121,7 @@ fun ContactCardRow(
 
                 Column {
                     Text(
-                        contact.name,
+                        contact.username,
                         style = MaterialTheme.typography.titleLarge,
                         color = contentColor,
                     )
@@ -146,7 +146,7 @@ fun ContactCardRow(
 @Composable
 fun PreviewContactCardColumn() {
     val contact = Contact(
-        name = "Mary Jane",
+        username = "Mary Jane",
         cardNo = "123456789",
         phoneNo = "+254 120811682"
     )
@@ -159,7 +159,7 @@ fun PreviewContactCardColumn() {
 @Composable
 fun PreviewContactCardRow() {
     val contact = Contact(
-        name = "Mary Jane",
+        username = "Mary Jane",
         cardNo = "123456789",
         phoneNo = "+254 120811682"
     )

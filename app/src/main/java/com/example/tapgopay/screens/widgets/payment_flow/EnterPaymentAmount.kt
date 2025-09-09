@@ -83,7 +83,7 @@ fun EnterPaymentAmount(
 @Composable
 fun PreviewEnterPaymentAmount() {
     val receiver = Contact(
-        name = "Mary Jane",
+        username = "Mary Jane",
         cardNo = "123456789",
         phoneNo = "+254 120811682"
     )

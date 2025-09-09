@@ -1,7 +1,7 @@
 package com.example.tapgopay.data
 
 import com.example.tapgopay.remote.Contact
-import com.example.tapgopay.remote.Transaction
+import com.example.tapgopay.remote.TransactionResult
 import java.time.LocalDateTime
 import java.util.UUID
 import kotlin.random.Random
@@ -20,11 +20,11 @@ fun generateRandomTransactionId(): String {
 // Alice will act as the current account holder
 val alice = Contact("Alice", "+254700111111")
 
-fun generateRandomTransactions(): List<Transaction> {
+fun generateRandomTransactions(): List<TransactionResult> {
     val bob = Contact("Bob", "+254700222222")
     val charlie = Contact("Charlie", "+254700333333")
     val diana = Contact("Diana", "+254700444444")
-    val transactions = mutableListOf<Transaction>()
+    val transactions = mutableListOf<TransactionResult>()
     val today = LocalDateTime.now()
 
     for (i in 0..10) {
@@ -46,10 +46,10 @@ fun generateRandomTransactions(): List<Transaction> {
         val randomHours = Random.nextInt(24)
         timestamp = timestamp.plusHours(randomHours.toLong())
 
-        val transaction = Transaction(
+        val transaction = TransactionResult(
             transactionId = transactionId,
-            sender = sender.cardNo,
-            receiver = receiver.cardNo,
+            sender = sender,
+            receiver = receiver,
             amount = amount,
             createdAt = timestamp,
             signature = "",

@@ -19,6 +19,9 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -32,16 +35,17 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.tapgopay.R
 import com.example.tapgopay.data.generateRandomTransactions
-import com.example.tapgopay.remote.Transaction
+import com.example.tapgopay.remote.TransactionResult
 import com.example.tapgopay.remote.isIncoming
 import com.example.tapgopay.ui.theme.TapGoPayTheme
 import com.example.tapgopay.ui.theme.successColor
 import com.example.tapgopay.utils.formatAmount
 import com.example.tapgopay.utils.formatDatetime
+import com.example.tapgopay.utils.ifEmptyTryDefaults
 
 @Composable
 fun Transactions(
-    transactions: List<Transaction>,
+    transactions: List<TransactionResult>,
 ) {
     Column(
         modifier = Modifier
@@ -91,8 +95,11 @@ fun Transactions(
 
 @Composable
 fun TransactionView(
-    transaction: Transaction,
+    transaction: TransactionResult,
 ) {
+    val sender by remember { mutableStateOf(transaction.sender) }
+    val receiver by remember { mutableStateOf(transaction.receiver) }
+
     Card(
         colors = CardDefaults.cardColors().copy(
             containerColor = MaterialTheme.colorScheme.surface,
@@ -120,9 +127,19 @@ fun TransactionView(
                         SpanStyle(fontWeight = FontWeight.Bold)
                     ) {
                         if (transaction.isIncoming()) {
-                            append(transaction.sender)
+                            append(
+                                sender.username.ifEmptyTryDefaults(
+                                    sender.cardNo,
+                                    sender.phoneNo
+                                )
+                            )
                         } else {
-                            append(transaction.receiver)
+                            append(
+                                receiver.username.ifEmptyTryDefaults(
+                                    receiver.cardNo,
+                                    receiver.phoneNo
+                                )
+                            )
                         }
                     }
                 }

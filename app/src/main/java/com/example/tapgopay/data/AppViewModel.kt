@@ -17,7 +17,9 @@ import com.example.tapgopay.MainActivity
 import com.example.tapgopay.remote.Api
 import com.example.tapgopay.remote.Contact
 import com.example.tapgopay.remote.CreditCard
-import com.example.tapgopay.remote.Transaction
+import com.example.tapgopay.remote.TransactionRequest
+import com.example.tapgopay.remote.TransactionResult
+import com.example.tapgopay.remote.asResult
 import com.example.tapgopay.utils.extractErrorMessage
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
@@ -66,7 +68,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
 
     var creditCards = mutableStateListOf<CreditCard>()
         private set
-    val transactions = mutableStateListOf<Transaction>()
+    val transactions = mutableStateListOf<TransactionResult>()
     private val _errors = MutableSharedFlow<String>(extraBufferCapacity = 1)
     val errors = _errors.asSharedFlow()
 
@@ -116,7 +118,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                         )
                     )
                     val newContact = Contact(
-                        name = name,
+                        username = name,
                         phoneNo = phoneNo,
                     )
                     contacts.add(newContact)
@@ -191,8 +193,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
         }
     }
 
-    suspend fun transferFunds(sender: CreditCard): Transaction {
-        val transactionRequest = Transaction(
+    suspend fun transferFunds(sender: CreditCard): TransactionResult {
+        val transactionRequest = TransactionRequest(
             sender = sender.cardNo,
             receiver = paymentRecipient?.value ?: "",
             amount = amount,
@@ -217,7 +219,7 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
             )
 
             val privateKey: PrivateKey =
-                loadAndDecryptPrivateKey(pin, privKeyFile) ?: return transactionRequest
+                loadAndDecryptPrivateKey(pin, privKeyFile) ?: return transactionRequest.asResult()
 
             // Sign transaction details
             val payload = mapOf(
@@ -227,7 +229,8 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 "created_at" to LocalDateTime.now().toString()
             )
             val data: ByteArray = Gson().toJson(payload).toByteArray()
-            val signature: ByteArray = signData(data, privateKey) ?: return transactionRequest
+            val signature: ByteArray =
+                signData(data, privateKey) ?: return transactionRequest.asResult()
             transactionRequest.signature = Base64.encodeToString(signature, Base64.DEFAULT)
 
             // Send transfer funds request
@@ -237,14 +240,14 @@ class AppViewModel(application: Application) : AndroidViewModel(application) {
                 errorMessage?.let {
                     _errors.emit(it)
                 }
-                return transactionRequest
+                return transactionRequest.asResult()
             }
-            val transactionResult: Transaction? = response.body()
-            return transactionResult ?: transactionRequest
+            val transactionResult: TransactionResult? = response.body()
+            return transactionResult ?: transactionRequest.asResult()
 
         } catch (e: Exception) {
             handleException(e, "Error completing transaction")
-            return transactionRequest
+            return transactionRequest.asResult()
         }
     }
 
