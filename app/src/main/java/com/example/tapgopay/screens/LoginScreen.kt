@@ -2,6 +2,7 @@ package com.example.tapgopay.screens
 
 import android.app.Application
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -51,33 +52,124 @@ fun LoginScreen(
     Scaffold(
         modifier = Modifier.fillMaxSize()
     ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
+        Box(
+            modifier = Modifier.fillMaxSize()
                 .padding(innerPadding)
                 .padding(horizontal = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
         ) {
+            // Main Screen Content
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp),
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
             ) {
-                Text(
-                    text = "Login",
-                    style = MaterialTheme.typography.headlineLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp),
+                ) {
+                    Text(
+                        text = "Login",
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                    )
 
-                Text(
-                    text = "Welcome Back!",
-                    style = MaterialTheme.typography.headlineSmall,
-                )
+                    Text(
+                        text = "Welcome Back!",
+                        style = MaterialTheme.typography.headlineSmall,
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    InputField(
+                        label = "Email",
+                        value = authViewModel.email,
+                        onValueChange = { value ->
+                            authViewModel.email = value
+                        },
+                        leadingIconId = R.drawable.mail_24dp,
+                        keyboardType = KeyboardType.Email,
+                    )
+
+                    PasswordField(
+                        label = "Enter Your 4 Digit Pin",
+                        value = authViewModel.pin,
+                        onValueChange = { value ->
+                            if (value.length > MIN_PIN_LENGTH) {
+                                return@PasswordField
+                            }
+                            authViewModel.pin = value
+                        },
+                        onForgotPassword = {
+                            navigateTo(Routes.ForgotPasswordScreen)
+                        },
+                    )
+
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(horizontal = 8.dp),
+                    ) {
+                        val scope = rememberCoroutineScope()
+
+                        ElevatedButton(
+                            onClick = {
+                                scope.launch {
+                                    val loginSuccess = authViewModel.loginUser()
+                                    if (loginSuccess) {
+                                        navigateTo(Routes.HomeScreen)
+                                    }
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 24.dp),
+                            colors = ButtonDefaults.buttonColors().copy(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary,
+                            ),
+                            shape = RoundedCornerShape(50),
+                        ) {
+                            Text(
+                                text = "Login",
+                                modifier = Modifier.padding(vertical = 12.dp),
+                                style = MaterialTheme.typography.titleLarge,
+                            )
+                        }
+
+                        Row(
+                            horizontalArrangement = Arrangement.Start,
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                text = "Don't have an account?",
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+
+                            TextButton(
+                                onClick = {
+                                    navigateTo(Routes.SignUpScreen)
+                                },
+                            ) {
+                                Text(
+                                    text = "Register",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.SemiBold,
+                                    textDecoration = TextDecoration.Underline,
+                                )
+                            }
+                        }
+                    }
+                }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
-
+            // Message Banner
             var error by remember { mutableStateOf<String?>(null) }
 
             LaunchedEffect(Unit) {
@@ -91,92 +183,11 @@ fun LoginScreen(
             }
 
             error?.let {
-                MessageBanner(it.titlecase())
-            }
-
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                InputField(
-                    label = "Email",
-                    value = authViewModel.email,
-                    onValueChange = { value ->
-                        authViewModel.email = value
-                    },
-                    leadingIconId = R.drawable.mail_24dp,
-                    keyboardType = KeyboardType.Email,
-                )
-
-                PasswordField(
-                    label = "Enter Your 4 Digit Pin",
-                    value = authViewModel.pin,
-                    onValueChange = { value ->
-                        if (value.length > MIN_PIN_LENGTH) {
-                            return@PasswordField
-                        }
-                        authViewModel.pin = value
-                    },
-                    onForgotPassword = {
-                        navigateTo(Routes.ForgotPasswordScreen)
-                    },
-                )
-
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(horizontal = 8.dp),
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.TopCenter,
                 ) {
-                    val scope = rememberCoroutineScope()
-
-                    ElevatedButton(
-                        onClick = {
-                            scope.launch {
-                                val loginSuccess = authViewModel.loginUser()
-                                if (loginSuccess) {
-                                    navigateTo(Routes.HomeScreen)
-                                }
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 24.dp),
-                        colors = ButtonDefaults.buttonColors().copy(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary,
-                        ),
-                        shape = RoundedCornerShape(50),
-                    ) {
-                        Text(
-                            text = "Login",
-                            modifier = Modifier.padding(vertical = 12.dp),
-                            style = MaterialTheme.typography.titleLarge,
-                        )
-                    }
-
-                    Row(
-                        horizontalArrangement = Arrangement.Start,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = "Don't have an account?",
-                            style = MaterialTheme.typography.titleMedium,
-                        )
-
-                        TextButton(
-                            onClick = {
-                                navigateTo(Routes.SignUpScreen)
-                            },
-                        ) {
-                            Text(
-                                text = "Register",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.SemiBold,
-                                textDecoration = TextDecoration.Underline,
-                            )
-                        }
-                    }
+                    MessageBanner(it.titlecase())
                 }
             }
         }

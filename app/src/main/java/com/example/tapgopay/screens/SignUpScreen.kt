@@ -1,6 +1,7 @@
 package com.example.tapgopay.screens
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -52,34 +53,160 @@ fun SignUpScreen(
     Scaffold(
         modifier = Modifier.fillMaxSize()
     ) { innerPadding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
+        Box(
+            modifier = Modifier.fillMaxSize()
                 .padding(innerPadding)
                 .padding(horizontal = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
         ) {
+            // Main Screen Content
             Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp),
+                modifier = Modifier.fillMaxSize(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center,
             ) {
-                Text(
-                    text = "Join TapGoPay today",
-                    style = MaterialTheme.typography.headlineLarge,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.padding(end = 24.dp),
-                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 8.dp),
+                ) {
+                    Text(
+                        text = "Join TapGoPay today",
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(end = 24.dp),
+                    )
 
-                Text(
-                    text = "Create An Account",
-                    style = MaterialTheme.typography.headlineSmall,
-                )
+                    Text(
+                        text = "Create An Account",
+                        style = MaterialTheme.typography.headlineSmall,
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.Start,
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    InputField(
+                        label = "Username",
+                        value = authViewModel.username,
+                        onValueChange = { value ->
+                            authViewModel.username = value
+                        },
+                        leadingIconId = R.drawable.person_24dp,
+                    )
+
+                    InputField(
+                        label = "Email",
+                        value = authViewModel.email,
+                        onValueChange = { value ->
+                            authViewModel.email = value
+                        },
+                        keyboardType = KeyboardType.Email,
+                        leadingIconId = R.drawable.mail_24dp,
+                    )
+
+                    InputField(
+                        label = "Phone Number",
+                        value = authViewModel.phoneNumber,
+                        onValueChange = { value ->
+                            authViewModel.phoneNumber = value
+                        },
+                        keyboardType = KeyboardType.Phone,
+                        leadingIconId = R.drawable.call_24dp,
+                    )
+
+                    PasswordField(
+                        label = "Enter 4 Digit Pin",
+                        value = authViewModel.pin,
+                        onValueChange = { value ->
+                            if (value.length > MIN_PIN_LENGTH) {
+                                return@PasswordField
+                            }
+                            authViewModel.pin = value
+                        },
+                    )
+
+                    // Terms And Conditions section
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(vertical = 12.dp, horizontal = 8.dp),
+                    ) {
+                        Checkbox(
+                            checked = authViewModel.agreedToTerms,
+                            onCheckedChange = { value ->
+                                authViewModel.agreedToTerms = value
+                            },
+                            modifier = Modifier.size(32.dp),
+                        )
+
+                        Text(
+                            text = "I agree to the Terms and Conditions",
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                    }
+
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        val scope = rememberCoroutineScope()
+
+                        ElevatedButton(
+                            onClick = {
+                                scope.launch {
+                                    val signupSuccess = authViewModel.registerUser()
+                                    if (signupSuccess) {
+                                        navigateTo(Routes.SignUpScreen)
+                                    }
+                                }
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp),
+                            colors = ButtonDefaults.buttonColors().copy(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary,
+                            ),
+                            shape = RoundedCornerShape(50),
+                        ) {
+                            Text(
+                                text = "Create Account",
+                                modifier = Modifier.padding(vertical = 12.dp),
+                                style = MaterialTheme.typography.titleLarge,
+                            )
+                        }
+
+                        Row(
+                            horizontalArrangement = Arrangement.Start,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Already have an account?",
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+
+                            TextButton(
+                                onClick = {
+                                    navigateTo(Routes.LoginScreen)
+                                },
+                            ) {
+                                Text(
+                                    text = "Login",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.SemiBold,
+                                    textDecoration = TextDecoration.Underline,
+                                )
+                            }
+                        }
+                    }
+                }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
-
+            // Message Banner
             var error by remember { mutableStateOf<String?>(null) }
 
             LaunchedEffect(Unit) {
@@ -93,126 +220,11 @@ fun SignUpScreen(
             }
 
             error?.let {
-                MessageBanner(it.titlecase())
-            }
-
-            Column(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalAlignment = Alignment.Start,
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                InputField(
-                    label = "Username",
-                    value = authViewModel.username,
-                    onValueChange = { value ->
-                        authViewModel.username = value
-                    },
-                    leadingIconId = R.drawable.person_24dp,
-                )
-
-                InputField(
-                    label = "Email",
-                    value = authViewModel.email,
-                    onValueChange = { value ->
-                        authViewModel.email = value
-                    },
-                    keyboardType = KeyboardType.Email,
-                    leadingIconId = R.drawable.mail_24dp,
-                )
-
-                InputField(
-                    label = "Phone Number",
-                    value = authViewModel.phoneNumber,
-                    onValueChange = { value ->
-                        authViewModel.phoneNumber = value
-                    },
-                    keyboardType = KeyboardType.Phone,
-                    leadingIconId = R.drawable.call_24dp,
-                )
-
-                PasswordField(
-                    label = "Enter 4 Digit Pin",
-                    value = authViewModel.pin,
-                    onValueChange = { value ->
-                        if (value.length > MIN_PIN_LENGTH) {
-                            return@PasswordField
-                        }
-                        authViewModel.pin = value
-                    },
-                )
-
-                // Terms And Conditions section
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.padding(vertical = 12.dp, horizontal = 8.dp),
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.TopCenter,
                 ) {
-                    Checkbox(
-                        checked = authViewModel.agreedToTerms,
-                        onCheckedChange = { value ->
-                            authViewModel.agreedToTerms = value
-                        },
-                        modifier = Modifier.size(32.dp),
-                    )
-
-                    Text(
-                        text = "I agree to the Terms and Conditions",
-                        style = MaterialTheme.typography.titleMedium,
-                    )
-                }
-
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    val scope = rememberCoroutineScope()
-
-                    ElevatedButton(
-                        onClick = {
-                            scope.launch {
-                                val signupSuccess = authViewModel.registerUser()
-                                if (signupSuccess) {
-                                    navigateTo(Routes.SignUpScreen)
-                                }
-                            }
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 24.dp),
-                        colors = ButtonDefaults.buttonColors().copy(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary,
-                        ),
-                        shape = RoundedCornerShape(50),
-                    ) {
-                        Text(
-                            text = "Create Account",
-                            modifier = Modifier.padding(vertical = 12.dp),
-                            style = MaterialTheme.typography.titleLarge,
-                        )
-                    }
-
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = "Already have an account?",
-                            style = MaterialTheme.typography.titleMedium,
-                        )
-
-                        TextButton(
-                            onClick = {
-                                navigateTo(Routes.LoginScreen)
-                            },
-                        ) {
-                            Text(
-                                text = "Login",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.primary,
-                                fontWeight = FontWeight.SemiBold,
-                                textDecoration = TextDecoration.Underline,
-                            )
-                        }
-                    }
+                    MessageBanner(it.titlecase())
                 }
             }
         }

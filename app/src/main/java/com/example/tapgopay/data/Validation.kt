@@ -9,7 +9,7 @@ const val MIN_OTP_LENGTH = 4
 
 fun validateUsername(username: String) {
     if (username.length < MIN_NAME_LENGTH) {
-        throw IllegalArgumentException("Username too short. Minimum of $MIN_NAME_LENGTH characters acceptable")
+        throw IllegalArgumentException("Username too short")
     }
 }
 
@@ -73,18 +73,17 @@ private fun isWeakPin(pin: String): Boolean {
         if (currentDigit != previousDigit) {
             hasSameDigits = false
         }
-        if (currentDigit == previousDigit + 1) {
-            // increasing digits -> decreasing = false
-            hasDecreasingDigits = false
-        }
-        if (currentDigit == previousDigit - 1) {
-            // decreasing digits -> increasing = false
+        if (currentDigit != previousDigit + 1) {
             hasIncreasingDigits = false
+        }
+        if (currentDigit != previousDigit - 1) {
+            hasDecreasingDigits = false
         }
         previousChar = char
     }
     return hasSameDigits || hasIncreasingDigits || hasDecreasingDigits
 }
+
 
 fun validateEmail(email: String) {
     if (email.isEmpty()) {

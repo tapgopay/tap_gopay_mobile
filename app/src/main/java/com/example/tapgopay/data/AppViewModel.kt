@@ -52,7 +52,7 @@ fun Recipient.toContact(): Contact {
     }
 }
 
-class AppViewModel(application: Application) : AndroidViewModel(application) {
+open class AppViewModel(application: Application) : AndroidViewModel(application) {
     companion object {
         const val CREDIT_CARD_MIN_LEN: Int = 12
     }

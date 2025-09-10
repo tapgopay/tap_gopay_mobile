@@ -1,5 +1,6 @@
 package com.example.tapgopay.screens
 
+import android.app.Application
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -517,8 +518,14 @@ fun CreditCardView(
 @Preview(showBackground = true, widthDp = 411, heightDp = 891)
 @Composable
 fun PreviewHomeScreen() {
+    val app = Application()
+    val fakeViewModel = object : AppViewModel(app) {
+        // override state with sample data
+    }
+
     TapGoPayTheme {
         HomeScreen(
+            appViewModel = fakeViewModel,
             navigateTo = {}
         )
     }

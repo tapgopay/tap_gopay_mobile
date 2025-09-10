@@ -29,7 +29,7 @@ fun MessageBanner(message: String) {
         modifier = Modifier.padding(12.dp),
         shape = RoundedCornerShape(50),
         colors = CardDefaults.cardColors().copy(
-            containerColor = MaterialTheme.colorScheme.primary,
+            containerColor = MaterialTheme.colorScheme.primaryContainer,
             contentColor = MaterialTheme.colorScheme.onPrimary,
         ),
         elevation = CardDefaults.cardElevation(
@@ -44,11 +44,11 @@ fun MessageBanner(message: String) {
             Image(
                 painter = painterResource(R.drawable.pos_terminal),
                 contentDescription = "POS",
-                modifier = Modifier.size(48.dp),
+                modifier = Modifier.size(32.dp),
             )
             Text(
                 text = message.titlecase(),
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.titleMedium,
             )
         }
     }

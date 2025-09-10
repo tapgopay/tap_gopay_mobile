@@ -24,6 +24,7 @@ import okhttp3.MultipartBody
 import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
 import java.io.IOException
+import java.security.KeyPair
 import java.security.PrivateKey
 
 open class AuthViewModel(application: Application) : AndroidViewModel(application) {
@@ -90,7 +91,7 @@ open class AuthViewModel(application: Application) : AndroidViewModel(applicatio
             }
 
             // Send public key to server
-            val pubKeyBytes = Base64.encode(keyPair.pubKey.pemEncode(), Base64.DEFAULT)
+            val pubKeyBytes = Base64.encode(keyPair.public.pemEncode(), Base64.DEFAULT)
             val requestFile =
                 pubKeyBytes.toRequestBody("application/octet-stream".toMediaTypeOrNull())
             val body = MultipartBody.Part.createFormData(
@@ -147,7 +148,7 @@ open class AuthViewModel(application: Application) : AndroidViewModel(applicatio
                     _errors.emit("Unexpected error logging in")
                     return@withContext false
                 }
-                keyPair.privKey
+                keyPair.private
             }
 
             // Sign user's email with private key to authenticate with server

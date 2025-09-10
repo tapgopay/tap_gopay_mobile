@@ -1,3 +1,5 @@
+import com.android.build.api.dsl.Packaging
+
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -26,12 +28,12 @@ android {
                 "proguard-rules.pro"
             )
 
-            buildConfigField("String", "REMOTE_URL", "\"http://localhost:5000\"")
+            buildConfigField("String", "REMOTE_URL", "\"http://192.168.0.106:5000\"")
             buildConfigField("String", "ANDROID_API_KEY", "\"MFNFK2dKaSk2ZlwrfDA4Ly9kM3Bqa2JeVnoraCVrRCw=\"")
         }
 
         debug {
-            buildConfigField("String", "REMOTE_URL", "\"http://localhost:5000\"")
+            buildConfigField("String", "REMOTE_URL", "\"http://192.168.0.106:5000\"")
             buildConfigField("String", "ANDROID_API_KEY", "\"MFNFK2dKaSk2ZlwrfDA4Ly9kM3Bqa2JeVnoraCVrRCw=\"")
         }
     }
@@ -45,6 +47,11 @@ android {
     buildFeatures {
         compose = true
         buildConfig = true
+    }
+    packagingOptions {
+        resources {
+            excludes += "META-INF/versions/9/OSGI-INF/MANIFEST.MF"
+        }
     }
 }
 

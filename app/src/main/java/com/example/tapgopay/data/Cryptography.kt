@@ -4,18 +4,17 @@ import android.util.Log
 import com.example.tapgopay.MainActivity
 import org.bouncycastle.crypto.generators.Argon2BytesGenerator
 import org.bouncycastle.crypto.params.Argon2Parameters
-import org.bouncycastle.jce.ECNamedCurveTable
-import org.bouncycastle.jce.spec.ECParameterSpec
-import org.bouncycastle.jce.spec.ECPrivateKeySpec
-import org.bouncycastle.jce.spec.ECPublicKeySpec
 import java.io.File
 import java.math.BigInteger
+import java.security.AlgorithmParameters
 import java.security.KeyFactory
+import java.security.KeyPair
+import java.security.KeyPairGenerator
 import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.SecureRandom
 import java.security.Signature
-import java.security.spec.PKCS8EncodedKeySpec
+import java.security.spec.*
 import java.util.Base64
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
@@ -42,10 +41,6 @@ private fun deriveKey(password: String, salt: ByteArray, keyLen: Int = 32): Byte
     return result
 }
 
-data class KeyPair(
-    val privKey: PrivateKey, val pubKey: PublicKey
-)
-
 /**
  * Generates a deterministic private and public keypair based on
  * provided seed phrase
@@ -53,19 +48,18 @@ data class KeyPair(
  * @return ECDSA private and public keypair
  */
 private fun generateKeyPair(
-    seed: ByteArray, curveName: String = "secp256r1"
+    seed: ByteArray,
+    curveName: String = "secp256r1"
 ): KeyPair {
-    val ecSpec: ECParameterSpec = ECNamedCurveTable.getParameterSpec(curveName)
-    val d = BigInteger(1, seed).mod(ecSpec.n.subtract(BigInteger.ONE))
+    val keyPairGenerator = KeyPairGenerator.getInstance("EC")
+    val ecSpec = ECGenParameterSpec(curveName)
 
-    val privKeySpec = ECPrivateKeySpec(d, ecSpec)
-    val pubPoint = ecSpec.g.multiply(d)
-    val pubKeySpec = ECPublicKeySpec(pubPoint, ecSpec)
+    // Modern DRBG-based SecureRandom
+    val random = SecureRandom.getInstanceStrong()
+    random.setSeed(seed) // deterministic: same seed -> same sequence
 
-    val keyFactory = KeyFactory.getInstance("ECDSA", "BC")
-    val privateKey = keyFactory.generatePrivate(privKeySpec)
-    val publicKey = keyFactory.generatePublic(pubKeySpec)
-    return KeyPair(privateKey, publicKey)
+    keyPairGenerator.initialize(ecSpec, random)
+    return keyPairGenerator.generateKeyPair()
 }
 
 /**
@@ -89,21 +83,21 @@ fun generateAndSaveKeyPair(
         val derivedKey = deriveKey(password, salt)
 
         // Use key to deterministically generate a private key
-        val (privateKey, publicKey) = generateKeyPair(derivedKey)
+        val keypair: KeyPair = generateKeyPair(derivedKey)
 
         // Encrypt private key
         val aesKey = SecretKeySpec(derivedKey, "AES")
         val cipher = Cipher.getInstance("AES/GCM/NoPadding")
         cipher.init(Cipher.ENCRYPT_MODE, aesKey, GCMParameterSpec(128, iv))
-        val ciphertext: ByteArray = cipher.doFinal(privateKey.encoded)
+        val ciphertext: ByteArray = cipher.doFinal(keypair.private.encoded)
 
         // Save private key to file
         privKeyFile.writeBytes(salt + iv + ciphertext)
 
         // Save public key to file
-        pubKeyFile.writeBytes(publicKey.pemEncode())
+        pubKeyFile.writeBytes(keypair.public.pemEncode())
 
-        return KeyPair(privateKey, publicKey)
+        return keypair
 
     } catch (e: Exception) {
         Log.e(MainActivity.TAG, "Error generating and saving ECDSA private key; ${e.message}")
@@ -135,7 +129,7 @@ fun loadAndDecryptPrivateKey(password: String, file: File): PrivateKey? {
 
         // Parse private key bytes into private key
         val keySpec = PKCS8EncodedKeySpec(encodedKey)
-        val keyFactory = KeyFactory.getInstance("ECDSA", "BC")
+        val keyFactory = KeyFactory.getInstance("EC")
         return keyFactory.generatePrivate(keySpec)
 
     } catch (e: Exception) {
