@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -45,9 +46,9 @@ fun textFieldColors() = TextFieldDefaults.colors().copy(
 
 @Composable
 fun InputField(
-    label: String,
     value: String,
     onValueChange: (String) -> Unit,
+    label: String,
     @DrawableRes leadingIconId: Int? = null,
     keyboardType: KeyboardType = KeyboardType.Text,
 ) {
@@ -67,6 +68,7 @@ fun InputField(
             onValueChange = onValueChange,
             modifier = Modifier
                 .fillMaxWidth()
+                .height(64.dp)
                 .shadow(elevation = 8.dp, shape = RoundedCornerShape(8.dp)),
             textStyle = MaterialTheme.typography.titleMedium,
             leadingIcon = {
@@ -114,6 +116,7 @@ fun PasswordField(
             onValueChange = onValueChange,
             modifier = Modifier
                 .fillMaxWidth()
+                .height(64.dp)
                 .shadow(elevation = 8.dp, shape = RoundedCornerShape(8.dp)),
             textStyle = MaterialTheme.typography.titleMedium,
             leadingIcon = {

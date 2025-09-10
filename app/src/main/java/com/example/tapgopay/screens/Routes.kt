@@ -7,4 +7,6 @@ enum class Routes {
     ProfileScreen,
     ForgotPasswordScreen,
     ResetPasswordScreen,
+    RequestPaymentScreen,
+    ScanQRCodeScreen,
 }

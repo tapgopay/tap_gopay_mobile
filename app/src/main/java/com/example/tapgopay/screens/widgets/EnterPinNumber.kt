@@ -86,8 +86,6 @@ fun EnterPinNumber(
             ) {
                 repeat(4) { index ->
                     val isColored = index < pin.length
-                    val borderColor =
-                        if (isColored) Color.Transparent else MaterialTheme.colorScheme.scrim
 
                     val animatedWidth by animateDpAsState(
                         targetValue = if (isLoading) 40.dp else 32.dp,
@@ -102,9 +100,13 @@ fun EnterPinNumber(
 
                     Box(
                         modifier = Modifier
-                            .border(2.dp, color = borderColor, shape = CircleShape)
+                            .border(2.dp, Color.Transparent, shape = CircleShape)
                             .background(
-                                color = MaterialTheme.colorScheme.primary,
+                                color = if (isColored) {
+                                    MaterialTheme.colorScheme.primary
+                                } else {
+                                    MaterialTheme.colorScheme.surface
+                                },
                                 shape = CircleShape,
                             )
                             .size(animatedWidth)

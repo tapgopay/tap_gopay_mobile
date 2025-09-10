@@ -21,9 +21,9 @@ fun generateRandomTransactionId(): String {
 val alice = Contact("Alice", "+254700111111")
 
 fun generateRandomTransactions(): List<TransactionResult> {
-    val bob = Contact("Bob", "+254700222222")
-    val charlie = Contact("Charlie", "+254700333333")
-    val diana = Contact("Diana", "+254700444444")
+    val bob = Contact("Bob", "12345678910", "+254700222222")
+    val charlie = Contact("Charlie", "12345678910", "+254700333333")
+    val diana = Contact("Diana", "12345678910", "+254700444444")
     val transactions = mutableListOf<TransactionResult>()
     val today = LocalDateTime.now()
 

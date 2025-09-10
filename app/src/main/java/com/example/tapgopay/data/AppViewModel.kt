@@ -9,6 +9,7 @@ import android.util.Log
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.AndroidViewModel
@@ -66,11 +67,11 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
     val contacts: List<Contact>
         get() = _contacts.toList()
 
-    var creditCards = mutableStateListOf<CreditCard>()
+    var creditCards = mutableStateMapOf<String, CreditCard>()
         private set
     val transactions = mutableStateListOf<TransactionResult>()
-    private val _errors = MutableSharedFlow<String>(extraBufferCapacity = 1)
-    val errors = _errors.asSharedFlow()
+    private val _uiMessages = MutableSharedFlow<UIMessage>(extraBufferCapacity = 1)
+    val uiMessages = _uiMessages.asSharedFlow()
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
@@ -84,7 +85,9 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
             paymentRecipient = recipient
             return true
         } catch (e: Exception) {
-            Log.e(MainActivity.TAG, "${e.message}")
+            viewModelScope.launch {
+                _uiMessages.emit(UIMessage.Error("Error selecting payment recipient"))
+            }
             return false
         }
     }
@@ -138,36 +141,39 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
     ) {
         when (e) {
             is IllegalArgumentException -> {
+                Log.e(MainActivity.TAG, "$message ${e.message}")
                 e.message?.let {
-                    _errors.emit(it)
+                    _uiMessages.emit(UIMessage.Error(it))
                 }
             }
 
             is IOException -> {
                 Log.e(MainActivity.TAG, "$message ${e.message}")
-                _errors.emit("Error contacting backend server")
+                _uiMessages.emit(UIMessage.Error("Error contacting TapGoPay servers"))
             }
 
             else -> {
                 Log.e(MainActivity.TAG, "$message ${e.message}")
-                _errors.emit(message)
+                _uiMessages.emit(UIMessage.Error(message))
             }
         }
     }
 
     suspend fun newCreditCard() = withContext(Dispatchers.IO) {
         try {
+            _uiMessages.emit(UIMessage.Loading("Creating new credit card"))
+
             val response = Api.creditCardsService.newCreditCard()
             if (!response.isSuccessful) {
                 val errorMessage: String? = response.extractErrorMessage()
                 errorMessage?.let {
-                    _errors.emit(it)
+                    _uiMessages.emit(UIMessage.Error(it))
                 }
                 return@withContext
             }
 
-            response.body()?.let {
-                creditCards.add(it)
+            response.body()?.let { card ->
+                creditCards[card.cardNo] = card
             }
         } catch (e: Exception) {
             handleException(e, "Error creating new credit card")
@@ -180,13 +186,13 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
             if (!response.isSuccessful) {
                 val errorMessage: String? = response.extractErrorMessage()
                 errorMessage?.let {
-                    _errors.emit(it)
+                    _uiMessages.emit(UIMessage.Error(it))
                 }
                 return@withContext
             }
 
-            response.body()?.let {
-                creditCards.addAll(it)
+            response.body()?.forEach { card ->
+                creditCards[card.cardNo] = card
             }
         } catch (e: Exception) {
             handleException(e, "Error fetching credit cards")
@@ -206,6 +212,8 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
             validatePaymentRecipient(paymentRecipient)
             validatePin(pin)
             validateAmount(amount)
+
+            _uiMessages.emit(UIMessage.Loading("Transferring funds"))
 
             // Load user's private key
             val sharedPrefs = getApplication<Application>().getSharedPreferences(
@@ -238,7 +246,7 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
             if (!response.isSuccessful) {
                 val errorMessage: String? = response.extractErrorMessage()
                 errorMessage?.let {
-                    _errors.emit(it)
+                    _uiMessages.emit(UIMessage.Error(it))
                 }
                 return transactionRequest.asResult()
             }
@@ -248,6 +256,56 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
         } catch (e: Exception) {
             handleException(e, "Error completing transaction")
             return transactionRequest.asResult()
+        }
+    }
+
+    suspend fun toggleFreeze(creditCard: CreditCard) = withContext(Dispatchers.IO) {
+        if (creditCard.isActive) {
+            freezeCreditCard(creditCard)
+        } else {
+            activateCreditCard(creditCard)
+        }
+    }
+
+    private suspend fun freezeCreditCard(creditCard: CreditCard) = withContext(Dispatchers.IO) {
+        try {
+            _uiMessages.emit(UIMessage.Loading("Freezing credit card"))
+
+            val response = Api.creditCardsService.freezeCreditCard(creditCard.cardNo)
+            if (!response.isSuccessful) {
+                val errorMessage: String? = response.extractErrorMessage()
+                errorMessage?.let {
+                    _uiMessages.emit(UIMessage.Error(it))
+                }
+                return@withContext
+            }
+
+            creditCard.isActive = false
+            creditCards[creditCard.cardNo] = creditCard
+
+        } catch (e: Exception) {
+            handleException(e, "Error freezing credit card")
+        }
+    }
+
+    private suspend fun activateCreditCard(creditCard: CreditCard) = withContext(Dispatchers.IO) {
+        try {
+            _uiMessages.emit(UIMessage.Loading("Activating credit card"))
+
+            val response = Api.creditCardsService.activateCreditCard(creditCard.cardNo)
+            if (!response.isSuccessful) {
+                val errorMessage: String? = response.extractErrorMessage()
+                errorMessage?.let {
+                    _uiMessages.emit(UIMessage.Error(it))
+                }
+                return@withContext
+            }
+
+            creditCard.isActive = true
+            creditCards[creditCard.cardNo] = creditCard
+
+        } catch (e: Exception) {
+            handleException(e, "Error activating credit card")
         }
     }
 

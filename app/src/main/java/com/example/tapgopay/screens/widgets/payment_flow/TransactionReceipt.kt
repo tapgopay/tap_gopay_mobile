@@ -98,7 +98,7 @@ fun TransactionReceipt(
                     Text(
                         "Payment ID",
                         style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.SemiBold,
+                            fontWeight = FontWeight.Medium,
                         ),
                     )
 

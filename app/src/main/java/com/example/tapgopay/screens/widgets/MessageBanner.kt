@@ -19,17 +19,18 @@ import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.tapgopay.R
+import com.example.tapgopay.data.UIMessage
 import com.example.tapgopay.ui.theme.TapGoPayTheme
 import com.example.tapgopay.utils.titlecase
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MessageBanner(message: String) {
+fun MessageBanner(uiMessage: UIMessage) {
     Card(
         modifier = Modifier.padding(12.dp),
         shape = RoundedCornerShape(50),
         colors = CardDefaults.cardColors().copy(
-            containerColor = MaterialTheme.colorScheme.primaryContainer,
+            containerColor = MaterialTheme.colorScheme.primary,
             contentColor = MaterialTheme.colorScheme.onPrimary,
         ),
         elevation = CardDefaults.cardElevation(
@@ -47,7 +48,7 @@ fun MessageBanner(message: String) {
                 modifier = Modifier.size(32.dp),
             )
             Text(
-                text = message.titlecase(),
+                text = uiMessage.message.titlecase(),
                 style = MaterialTheme.typography.titleMedium,
             )
         }
@@ -58,6 +59,8 @@ fun MessageBanner(message: String) {
 @Composable
 fun PreviewMessageBanner() {
     TapGoPayTheme {
-        MessageBanner("Hello World")
+        MessageBanner(
+            UIMessage.Info("Hello World")
+        )
     }
 }

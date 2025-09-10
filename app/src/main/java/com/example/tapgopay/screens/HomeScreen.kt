@@ -16,9 +16,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.itemsIndexed
-import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
@@ -35,6 +32,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,18 +45,23 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.tapgopay.R
 import com.example.tapgopay.data.AppViewModel
+import com.example.tapgopay.data.UIMessage
 import com.example.tapgopay.remote.CreditCard
 import com.example.tapgopay.screens.widgets.Menu
+import com.example.tapgopay.screens.widgets.MessageBanner
 import com.example.tapgopay.screens.widgets.Transactions
 import com.example.tapgopay.screens.widgets.payment_flow.PaymentFlow
 import com.example.tapgopay.ui.theme.TapGoPayTheme
 import com.example.tapgopay.ui.theme.successColor
 import com.example.tapgopay.utils.formatAmount
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -67,10 +70,6 @@ fun HomeScreen(
     appViewModel: AppViewModel = viewModel(),
     navigateTo: (route: Routes) -> Unit,
 ) {
-    val transactionsSheetState = rememberModalBottomSheetState()
-    var viewAllTransactions by remember { mutableStateOf(false) }
-    val scope = rememberCoroutineScope()
-
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
@@ -87,11 +86,11 @@ fun HomeScreen(
                         onClick = {
                             navigateTo(Routes.ProfileScreen)
                         },
-                        modifier = Modifier.size(24.dp),
                     ) {
-                        Image(
+                        Icon(
                             painter = painterResource(R.drawable.person_add_24dp),
                             contentDescription = "User Profile",
+                            modifier = Modifier.size(32.dp),
                         )
                     }
                 },
@@ -102,182 +101,148 @@ fun HomeScreen(
                 }
             )
         },
-        bottomBar = {
-            BottomAppBar(
-                navigateHome = {
-                    navigateTo(Routes.HomeScreen)
-                },
-                viewTransactions = {
-                    viewAllTransactions = true
-                    scope.launch {
-                        transactionsSheetState.expand()
-                    }
-                },
-                viewReports = {},
-                manageAccount = {},
-            )
-        }
     ) { innerPadding ->
-        val creditCards = appViewModel.creditCards
+        val transactionsSheetState = rememberModalBottomSheetState()
+        var viewAllTransactions by remember { mutableStateOf(false) }
+        val scope = rememberCoroutineScope()
+
+        val creditCards: List<CreditCard> = appViewModel.creditCards.values.toList()
         var selectedCreditCard by remember { mutableStateOf<CreditCard?>(null) }
         val transferSheetState = rememberModalBottomSheetState()
 
-        Column(
+        Box(
             modifier = Modifier
+                .fillMaxSize()
                 .padding(innerPadding)
                 .padding(horizontal = 12.dp)
-                .fillMaxSize(),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
-            horizontalAlignment = Alignment.Start,
         ) {
-            if (creditCards.isEmpty()) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 24.dp),
-                    verticalArrangement = Arrangement.spacedBy(20.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Text(
-                        "You have zero credit cards registered",
-                        style = MaterialTheme.typography.titleLarge,
-                        textAlign = TextAlign.Center,
-                    )
-                    ElevatedButton(
-                        onClick = {
-                            scope.launch {
-                                appViewModel.newCreditCard()
-                            }
-                        },
-                        colors = ButtonDefaults.elevatedButtonColors().copy(
-                            containerColor = MaterialTheme.colorScheme.primary,
-                            contentColor = MaterialTheme.colorScheme.onPrimary,
-                        )
+            Column(
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(8.dp),
+                horizontalAlignment = Alignment.Start,
+            ) {
+                if (creditCards.isEmpty()) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 24.dp),
+                        verticalArrangement = Arrangement.spacedBy(20.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Text(
-                            "Create Credit Card",
+                            "You have zero credit cards registered",
                             style = MaterialTheme.typography.titleLarge,
-                            modifier = Modifier.padding(vertical = 8.dp)
+                            textAlign = TextAlign.Center,
                         )
+                        ElevatedButton(
+                            onClick = {
+                                scope.launch {
+                                    appViewModel.newCreditCard()
+                                }
+                            },
+                            colors = ButtonDefaults.elevatedButtonColors().copy(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary,
+                            )
+                        ) {
+                            Text(
+                                "Create Credit Card",
+                                style = MaterialTheme.typography.titleLarge,
+                                modifier = Modifier.padding(vertical = 8.dp)
+                            )
+                        }
                     }
-                }
-            }
+                } else {
+                    val creditCard = remember { creditCards.first() }
 
-            LazyRow(
-                state = rememberLazyListState(),
-            ) {
-                itemsIndexed(creditCards) { index, item ->
                     CreditCardView(
-                        creditCard = item,
-                        startTransfer = {
-                            selectedCreditCard = it
+                        creditCard = creditCard,
+                        onTransferFunds = {
+                            selectedCreditCard = creditCard
                             scope.launch {
                                 transferSheetState.expand()
                             }
                         },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(224.dp),
+                        onToggleFreeze = {
+                            scope.launch {
+                                appViewModel.toggleFreeze(creditCard)
+                            }
+                        },
                     )
                 }
-            }
 
-            Transactions(
-                appViewModel.transactions
-            )
 
-            if (viewAllTransactions) {
-                ModalBottomSheet(
-                    onDismissRequest = {
+                Transactions(
+                    transactions = appViewModel.transactions,
+                    onViewAllTransactions = {
+                        viewAllTransactions = true
                         scope.launch {
-                            transactionsSheetState.hide()
-                            viewAllTransactions = false
+                            transactionsSheetState.expand()
                         }
-                    },
-                    sheetState = transactionsSheetState,
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxSize()
+                    }
+                )
+
+                if (viewAllTransactions) {
+                    ModalBottomSheet(
+                        onDismissRequest = {
+                            scope.launch {
+                                transactionsSheetState.hide()
+                                viewAllTransactions = false
+                            }
+                        },
+                        sheetState = transactionsSheetState,
+                        shape = RoundedCornerShape(12.dp)
                     ) {
-                        Transactions(appViewModel.transactions)
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                        ) {
+                            Transactions(appViewModel.transactions)
+                        }
+                    }
+                }
+
+                selectedCreditCard?.let {
+                    ModalBottomSheet(
+                        onDismissRequest = {
+                            selectedCreditCard = null
+                        },
+                        sheetState = transferSheetState,
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        PaymentFlow(
+                            sender = it,
+                            exitPaymentFlow = {
+                                selectedCreditCard = null
+                            }
+                        )
                     }
                 }
             }
 
-            selectedCreditCard?.let {
-                ModalBottomSheet(
-                    onDismissRequest = {
-                        selectedCreditCard = null
-                    },
-                    sheetState = transferSheetState,
-                    shape = RoundedCornerShape(12.dp)
+            // Message Banner
+            var error by remember { mutableStateOf<UIMessage?>(null) }
+
+            LaunchedEffect(Unit) {
+                appViewModel.uiMessages.collectLatest { uiMessage ->
+                    error = uiMessage
+                    launch {
+                        delay(5000)  // Hide after n seconds
+                        error = null
+                    }
+                }
+            }
+
+            error?.let {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.BottomCenter,
                 ) {
-                    PaymentFlow(
-                        sender = it,
-                        exitPaymentFlow = {
-                            selectedCreditCard = null
-                        }
-                    )
+                    MessageBanner(it)
                 }
             }
         }
     }
-}
-
-@Composable
-fun BottomAppBar(
-    navigateHome: () -> Unit,
-    viewTransactions: () -> Unit,
-    viewReports: () -> Unit,
-    manageAccount: () -> Unit,
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-    ) {
-        // Top Border
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(4.dp)
-                .background(MaterialTheme.colorScheme.surfaceContainer)
-        )
-
-        // Content
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 24.dp, vertical = 16.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            ActionButton(
-                onClick = navigateHome,
-                text = "Home",
-                iconId = R.drawable.home_24dp,
-            )
-
-            ActionButton(
-                onClick = viewTransactions,
-                text = "Transactions",
-                iconId = R.drawable.credit_card_24dp,
-            )
-
-            ActionButton(
-                onClick = viewReports,
-                text = "Reports",
-                iconId = R.drawable.bar_chart_24dp,
-            )
-
-            ActionButton(
-                onClick = manageAccount,
-                text = "Manage",
-                iconId = R.drawable.widgets_24dp,
-            )
-        }
-    }
-
 }
 
 @Composable
@@ -316,15 +281,23 @@ fun ActionButton(
 @Composable
 fun CreditCardView(
     creditCard: CreditCard,
-    modifier: Modifier,
-    startTransfer: (CreditCard) -> Unit,
+    onTransferFunds: () -> Unit,
+    onSetLimits: () -> Unit = {},
+    onViewCardDetails: () -> Unit = {},
+    onToggleFreeze: () -> Unit = {},
     color: Color = successColor,
     displayBalance: Boolean = true,
 ) {
-    Column {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable {},
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
         Card(
-            modifier = modifier
-                .clickable { },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(224.dp),
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors().copy(
                 containerColor = color.copy(alpha = 0.9F),
@@ -332,8 +305,7 @@ fun CreditCardView(
             ),
         ) {
             Column(
-                modifier = Modifier
-                    .fillMaxSize(),
+                modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Row(
@@ -396,9 +368,12 @@ fun CreditCardView(
                     Text(
                         creditCard.cardNo,
                         style = MaterialTheme.typography.headlineSmall.copy(
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.Medium
                         ),
                     )
+
+                    //
+
                 }
 
                 Box(
@@ -445,33 +420,26 @@ fun CreditCardView(
 
         // Balance
         if (displayBalance) {
-            Card(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 36.dp, vertical = 12.dp),
-                colors = CardDefaults.cardColors().copy(
-                    containerColor = color,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                ),
-                shape = RoundedCornerShape(50),
-                elevation = CardDefaults.cardElevation(
-                    defaultElevation = 12.dp
-                )
+                    .padding(vertical = 4.dp),
+                horizontalArrangement = Arrangement.Center,
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp),
-                    horizontalArrangement = Arrangement.Center,
+                Card(
+                    colors = CardDefaults.cardColors().copy(
+                        containerColor = color,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                    ),
+                    shape = RoundedCornerShape(50),
+                    elevation = CardDefaults.cardElevation(
+                        defaultElevation = 12.dp
+                    )
                 ) {
                     Text(
-                        "Balance",
+                        "Balance KSH ${formatAmount(creditCard.balance)}",
                         style = MaterialTheme.typography.titleMedium,
-                    )
-
-                    Text(
-                        "KSH ${formatAmount(creditCard.balance)}",
-                        style = MaterialTheme.typography.titleMedium,
+                        modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
                     )
                 }
             }
@@ -486,28 +454,26 @@ fun CreditCardView(
                 .padding(horizontal = 24.dp, vertical = 12.dp),
         ) {
             ActionButton(
-                onClick = {},
+                onClick = onViewCardDetails,
                 text = "Details",
                 iconId = R.drawable.credit_card_24dp,
             )
 
             ActionButton(
-                onClick = {
-                    startTransfer(creditCard)
-                },
+                onClick = onTransferFunds,
                 text = "Transfer",
                 iconId = R.drawable.arrow_upward_24dp,
             )
 
             ActionButton(
-                onClick = {},
+                onClick = onSetLimits,
                 text = "Limits",
                 iconId = R.drawable.filter_alt_24dp,
             )
 
             ActionButton(
-                onClick = {},
-                text = "Freeze",
+                onClick = onToggleFreeze,
+                text = if (creditCard.isActive) "Freeze" else "UnFreeze",
                 iconId = R.drawable.mode_cool_24dp,
             )
         }
@@ -515,7 +481,7 @@ fun CreditCardView(
 
 }
 
-@Preview(showBackground = true, widthDp = 411, heightDp = 891)
+@Preview(showBackground = true, device = Devices.PIXEL_7)
 @Composable
 fun PreviewHomeScreen() {
     val app = Application()

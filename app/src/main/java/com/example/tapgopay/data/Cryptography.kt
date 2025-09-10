@@ -5,8 +5,6 @@ import com.example.tapgopay.MainActivity
 import org.bouncycastle.crypto.generators.Argon2BytesGenerator
 import org.bouncycastle.crypto.params.Argon2Parameters
 import java.io.File
-import java.math.BigInteger
-import java.security.AlgorithmParameters
 import java.security.KeyFactory
 import java.security.KeyPair
 import java.security.KeyPairGenerator
@@ -14,7 +12,8 @@ import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.SecureRandom
 import java.security.Signature
-import java.security.spec.*
+import java.security.spec.ECGenParameterSpec
+import java.security.spec.PKCS8EncodedKeySpec
 import java.util.Base64
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
@@ -108,7 +107,7 @@ fun generateAndSaveKeyPair(
 fun PublicKey.pemEncode(): ByteArray {
     val encoded = this.encoded
     val base64 = Base64.getMimeEncoder(64, "\n".toByteArray()).encodeToString(encoded)
-    return "-----EC PUBLIC KEY-----\n$base64\n-----END PUBLIC KEY-----".toByteArray()
+    return "-----BEGIN EC PUBLIC KEY-----\n$base64\n-----END EC PUBLIC KEY-----".toByteArray()
 }
 
 fun loadAndDecryptPrivateKey(password: String, file: File): PrivateKey? {

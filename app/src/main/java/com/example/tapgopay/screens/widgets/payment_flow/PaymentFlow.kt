@@ -17,7 +17,6 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.tapgopay.data.AppViewModel
 import com.example.tapgopay.data.toContact
-import com.example.tapgopay.data.validateAmount
 import com.example.tapgopay.remote.CreditCard
 import com.example.tapgopay.remote.TransactionResult
 import com.example.tapgopay.screens.widgets.EnterPinNumber
@@ -49,12 +48,6 @@ fun PaymentFlow(
                     onContinue = {
                         val ok = appViewModel.setPaymentRecipient(it)
                         if (!ok) {
-                            Toast.makeText(
-                                context,
-                                "Incorrect recipient account number of phone number",
-                                Toast.LENGTH_LONG
-                            )
-                                .show()
                             return@SelectPaymentRecipient
                         }
                         index++
@@ -72,14 +65,12 @@ fun PaymentFlow(
                     goBack = { index-- },
                     onContinue = { amount ->
                         try {
-                            validateAmount(amount)
-
-                            // Move on to next section
+                            appViewModel.amount = amount.toDouble()
                             index++
-                        } catch (e: IllegalArgumentException) {
+                        } catch (e: Exception) {
                             Toast.makeText(
                                 context,
-                                e.message ?: "Please enter a valid amount",
+                                "Please enter a valid amount",
                                 Toast.LENGTH_SHORT
                             )
                                 .show()
@@ -99,7 +90,7 @@ fun PaymentFlow(
                         appViewModel.pin = pin
 
                         scope.launch {
-                            appViewModel.transferFunds(sender)
+                            transactionResult = appViewModel.transferFunds(sender)
                             isLoading = false
                             index++
                         }

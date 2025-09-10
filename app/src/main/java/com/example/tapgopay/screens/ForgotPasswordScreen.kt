@@ -33,10 +33,10 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.tapgopay.R
 import com.example.tapgopay.data.AuthViewModel
+import com.example.tapgopay.data.UIMessage
 import com.example.tapgopay.screens.widgets.InputField
 import com.example.tapgopay.screens.widgets.MessageBanner
 import com.example.tapgopay.ui.theme.TapGoPayTheme
-import com.example.tapgopay.utils.titlecase
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -47,11 +47,11 @@ fun ForgotPasswordScreen(
     authViewModel: AuthViewModel,
     navigateTo: (Routes) -> Unit,
 ) {
-    var error by remember { mutableStateOf<String?>(null) }
+    var error by remember { mutableStateOf<UIMessage?>(null) }
 
     LaunchedEffect(Unit) {
-        authViewModel.errors.collectLatest {
-            error = it
+        authViewModel.uiMessages.collectLatest { uiMessage ->
+            error = uiMessage
             launch {
                 delay(5000)  // Hide after n seconds
                 error = null
@@ -60,7 +60,7 @@ fun ForgotPasswordScreen(
     }
 
     error?.let {
-        MessageBanner(it.titlecase())
+        MessageBanner(it)
     }
 
     Scaffold(
@@ -77,7 +77,7 @@ fun ForgotPasswordScreen(
                         },
                     ) {
                         Icon(
-                            painter = painterResource(R.drawable.chevron_left_24dp),
+                            painter = painterResource(R.drawable.baseline_arrow_back_24),
                             contentDescription = "Back to Login Page",
                             modifier = Modifier.size(32.dp),
                         )

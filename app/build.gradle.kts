@@ -80,6 +80,10 @@ dependencies {
     // Cryptography
     implementation("org.bouncycastle:bcprov-jdk18on:1.78.1")
 
+    // QR Code
+    implementation("com.journeyapps:zxing-android-embedded:4.3.0")
+    implementation("com.google.zxing:core:3.5.3")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

@@ -24,7 +24,7 @@ val bodyFontFamily = FontFamily(
 val Poppins = FontFamily(
     Font(R.font.poppins_regular),
     Font(R.font.poppins_medium, weight = FontWeight.Medium),
-    Font(R.font.poppins_semibold, weight = FontWeight.SemiBold),
+    Font(R.font.poppins_semibold, weight = FontWeight.Medium),
     Font(R.font.poppins_bold, weight = FontWeight.Bold),
 )
 
