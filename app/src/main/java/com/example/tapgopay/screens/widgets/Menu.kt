@@ -43,7 +43,8 @@ fun Menu(
         ) {
             Icon(
                 painter = painterResource(R.drawable.menu_24dp),
-                contentDescription = "Menu"
+                contentDescription = "Menu",
+                modifier = Modifier.size(32.dp),
             )
         }
 

@@ -114,7 +114,7 @@ fun ContactCardRow(
                     Text(
                         contact.username.first().uppercase(),
                         style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.SemiBold,
+                            fontWeight = FontWeight.Medium,
                         ),
                     )
                 }

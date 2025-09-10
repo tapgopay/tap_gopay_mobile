@@ -35,7 +35,7 @@ fun Navbar(
             onClick = goBack,
         ) {
             Icon(
-                painter = painterResource(R.drawable.chevron_left_24dp),
+                painter = painterResource(R.drawable.baseline_arrow_back_24),
                 contentDescription = "Exit payment flow",
                 modifier = Modifier.size(32.dp),
             )

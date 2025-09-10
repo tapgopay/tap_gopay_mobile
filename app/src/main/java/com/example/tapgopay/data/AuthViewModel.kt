@@ -27,6 +27,14 @@ import java.io.IOException
 import java.security.KeyPair
 import java.security.PrivateKey
 
+sealed class UIMessage {
+    abstract val message: String
+
+    data class Info(override val message: String) : UIMessage()
+    data class Error(override val message: String) : UIMessage()
+    data class Loading(override val message: String = "Loading") : UIMessage()
+}
+
 open class AuthViewModel(application: Application) : AndroidViewModel(application) {
     var username by mutableStateOf("")
     var email by mutableStateOf("")
@@ -35,8 +43,8 @@ open class AuthViewModel(application: Application) : AndroidViewModel(applicatio
     var agreedToTerms by mutableStateOf(false)
     var otp by mutableStateOf("")
 
-    private val _errors = MutableSharedFlow<String>(extraBufferCapacity = 1)
-    val errors = _errors.asSharedFlow()
+    private val _uiMessages = MutableSharedFlow<UIMessage>(extraBufferCapacity = 1)
+    val uiMessages = _uiMessages.asSharedFlow()
 
     private suspend fun handleException(
         e: Exception,
@@ -45,18 +53,18 @@ open class AuthViewModel(application: Application) : AndroidViewModel(applicatio
         when (e) {
             is IllegalArgumentException -> {
                 e.message?.let {
-                    _errors.emit(it)
+                    _uiMessages.emit(UIMessage.Error(it))
                 }
             }
 
             is IOException -> {
                 Log.e(MainActivity.TAG, "$message ${e.message}")
-                _errors.emit("Error contacting backend server")
+                _uiMessages.emit(UIMessage.Error("Error contacting TapGoPay servers"))
             }
 
             else -> {
                 Log.e(MainActivity.TAG, "$message ${e.message}")
-                _errors.emit(message)
+                _uiMessages.emit(UIMessage.Error(message))
             }
         }
     }
@@ -71,9 +79,13 @@ open class AuthViewModel(application: Application) : AndroidViewModel(applicatio
             validatePhoneNumber(phoneNumber)
 
             if (!agreedToTerms) {
-                _errors.emit("You must agree to terms and conditions before continuing")
+                _uiMessages.emit(UIMessage.Error("You must agree to terms and conditions before continuing"))
                 return@withContext false
             }
+
+            _uiMessages.emit(
+                UIMessage.Loading("Creating user account")
+            )
 
             // Generate private and public key pair.
             // Use user's email as private key's filename
@@ -86,7 +98,7 @@ open class AuthViewModel(application: Application) : AndroidViewModel(applicatio
             )
             val keyPair: KeyPair? = generateAndSaveKeyPair(pin, privKeyFile, pubKeyFile)
             if (keyPair == null) {
-                _errors.emit("Unexpected error creating account")
+                _uiMessages.emit(UIMessage.Error("Unexpected error creating account"))
                 return@withContext false
             }
 
@@ -111,7 +123,7 @@ open class AuthViewModel(application: Application) : AndroidViewModel(applicatio
             if (!response.isSuccessful) {
                 val signupErrors = response.extractErrorMessage()
                 signupErrors?.let {
-                    _errors.emit(it)
+                    _uiMessages.emit(UIMessage.Error(it))
                 }
                 return@withContext false
             }
@@ -131,6 +143,10 @@ open class AuthViewModel(application: Application) : AndroidViewModel(applicatio
             validateEmail(email)
             validatePin(pin)
 
+            _uiMessages.emit(
+                UIMessage.Loading("Logging in to your account")
+            )
+
             // Use user's email as private key's filename
             val filesDir = getApplication<Application>().filesDir.toString()
             val privKeyFile = File(
@@ -145,7 +161,7 @@ open class AuthViewModel(application: Application) : AndroidViewModel(applicatio
                 )
                 val keyPair = generateAndSaveKeyPair(pin, privKeyFile, pubKeyFile)
                 if (keyPair == null) {
-                    _errors.emit("Unexpected error logging in")
+                    _uiMessages.emit(UIMessage.Error("Unexpected error logging in"))
                     return@withContext false
                 }
                 keyPair.private
@@ -154,7 +170,7 @@ open class AuthViewModel(application: Application) : AndroidViewModel(applicatio
             // Sign user's email with private key to authenticate with server
             val signature: ByteArray? = signData(email.toByteArray(), privateKey)
             if (signature == null) {
-                _errors.emit("Unexpected error logging in")
+                _uiMessages.emit(UIMessage.Error("Unexpected error logging in"))
                 return@withContext false
             }
             val base64EncodedSignature = Base64.encodeToString(signature, Base64.DEFAULT)
@@ -164,7 +180,7 @@ open class AuthViewModel(application: Application) : AndroidViewModel(applicatio
             if (!response.isSuccessful) {
                 val loginErrors = response.extractErrorMessage()
                 loginErrors?.let {
-                    _errors.emit(it)
+                    _uiMessages.emit(UIMessage.Error(it))
                 }
                 return@withContext false
             }
@@ -176,6 +192,7 @@ open class AuthViewModel(application: Application) : AndroidViewModel(applicatio
                 MainActivity.SHARED_PREFERENCES, Context.MODE_PRIVATE
             )
             sharedPrefs.edit {
+                putString(MainActivity.USERNAME, username)
                 putString(MainActivity.PRIVATE_KEY_FILENAME, privKeyFile.name)
             }
             return@withContext true
@@ -190,12 +207,16 @@ open class AuthViewModel(application: Application) : AndroidViewModel(applicatio
         try {
             validateEmail(email)
 
+            _uiMessages.emit(
+                UIMessage.Loading("Sending forgot password request")
+            )
+
             val request = EmailRequest(email)
             val response = Api.authService.forgotPassword(request)
             if (!response.isSuccessful) {
                 val errorMessage = response.extractErrorMessage()
                 errorMessage?.let {
-                    _errors.emit(it)
+                    _uiMessages.emit(UIMessage.Error(it))
                 }
                 return@withContext false
             }
@@ -212,17 +233,21 @@ open class AuthViewModel(application: Application) : AndroidViewModel(applicatio
             validateOtp(otp)
             validatePin(pin)
 
+            _uiMessages.emit(
+                UIMessage.Loading("Resetting account password")
+            )
+
             val request = PasswordResetRequest(otp, email, pin)
             val response = Api.authService.resetPassword(request)
             if (!response.isSuccessful) {
                 val errorMessage = response.extractErrorMessage()
                 errorMessage?.let {
-                    _errors.emit(it)
+                    _uiMessages.emit(UIMessage.Error(it))
                 }
             }
 
         } catch (e: Exception) {
-            handleException(e, "Error reseting user password")
+            handleException(e, "Error resetting account password")
         }
     }
 }

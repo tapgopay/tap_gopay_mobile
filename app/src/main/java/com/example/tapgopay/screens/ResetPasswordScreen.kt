@@ -42,11 +42,11 @@ import androidx.compose.ui.unit.dp
 import com.example.tapgopay.R
 import com.example.tapgopay.data.AuthViewModel
 import com.example.tapgopay.data.MIN_OTP_LENGTH
+import com.example.tapgopay.data.UIMessage
 import com.example.tapgopay.screens.widgets.DialPad
 import com.example.tapgopay.screens.widgets.MessageBanner
 import com.example.tapgopay.screens.widgets.PasswordField
 import com.example.tapgopay.ui.theme.TapGoPayTheme
-import com.example.tapgopay.utils.titlecase
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -57,11 +57,11 @@ fun ResetPasswordScreen(
     authViewModel: AuthViewModel,
     navigateTo: (Routes) -> Unit,
 ) {
-    var error by remember { mutableStateOf<String?>(null) }
+    var error by remember { mutableStateOf<UIMessage?>(null) }
 
     LaunchedEffect(Unit) {
-        authViewModel.errors.collectLatest {
-            error = it
+        authViewModel.uiMessages.collectLatest { uiMessage ->
+            error = uiMessage
             launch {
                 delay(5000)  // Hide after n seconds
                 error = null
@@ -70,7 +70,7 @@ fun ResetPasswordScreen(
     }
 
     error?.let {
-        MessageBanner(it.titlecase())
+        MessageBanner(it)
     }
 
     Scaffold(
@@ -85,7 +85,7 @@ fun ResetPasswordScreen(
                         },
                     ) {
                         Icon(
-                            painter = painterResource(R.drawable.chevron_left_24dp),
+                            painter = painterResource(R.drawable.baseline_arrow_back_24),
                             contentDescription = "Back to Login Page",
                             modifier = Modifier.size(48.dp),
                         )

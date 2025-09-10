@@ -16,7 +16,7 @@ data class CreditCard(
     @SerializedName("phone_no") val phoneNo: String,
     @SerializedName("card_no") val cardNo: String,
     @SerializedName("initial_deposit") val initialDeposit: Double,
-    @SerializedName("is_active") val isActive: Boolean,
+    @SerializedName("is_active") var isActive: Boolean,
     @SerializedName("created_at") val createdAt: LocalDateTime,
     val balance: Double,
 )
@@ -59,7 +59,12 @@ fun TransactionResult.isSuccessful(): Boolean {
 }
 
 fun TransactionResult.isIncoming(): Boolean {
-    return this.receiver.cardNo == alice.cardNo || this.receiver.phoneNo == alice.phoneNo
+    val receiversCardNo: String = this.receiver.cardNo
+    val receiversPhoneNo: String = this.receiver.phoneNo
+    val isIncomingTransaction = (receiversCardNo.isNotEmpty() && receiversCardNo == alice.cardNo) ||
+            (receiversPhoneNo.isNotEmpty() && receiversPhoneNo == alice.phoneNo)
+
+    return isIncomingTransaction
 }
 
 interface CreditCardService {

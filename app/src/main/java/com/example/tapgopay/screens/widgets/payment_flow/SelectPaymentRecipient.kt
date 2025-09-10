@@ -34,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -77,7 +78,8 @@ fun SelectPaymentRecipient(
                     "Receiver's Account Number",
                     style = MaterialTheme.typography.titleMedium,
                 )
-            }
+            },
+            textStyle = MaterialTheme.typography.titleMedium,
         )
 
         val context = LocalContext.current
@@ -160,7 +162,7 @@ fun SelectFromContactList(
                 FilterChip(
                     onClick = { filter = "All" },
                     label = {
-                        Text("All")
+                        Text("All", style = MaterialTheme.typography.titleMedium)
                     },
                     shape = RoundedCornerShape(50),
                     selected = filter == "All",
@@ -173,7 +175,7 @@ fun SelectFromContactList(
                 FilterChip(
                     onClick = { filter = "Favorites" },
                     label = {
-                        Text("Favorites")
+                        Text("Favorites", style = MaterialTheme.typography.titleMedium)
                     },
                     shape = RoundedCornerShape(50),
                     selected = filter == "Favorites",
@@ -222,8 +224,9 @@ fun SelectFromContactList(
                     },
                 ) {
                     Icon(
-                        painter = painterResource(R.drawable.autorenew_24dp),
+                        painter = painterResource(R.drawable.refresh_24dp),
                         contentDescription = "Refresh contacts",
+                        modifier = Modifier.size(32.dp),
                     )
                 }
 
@@ -236,6 +239,7 @@ fun SelectFromContactList(
                     Icon(
                         painter = painterResource(R.drawable.search_24dp),
                         contentDescription = "Search contacts",
+                        modifier = Modifier.size(32.dp),
                     )
                 }
             }
@@ -244,7 +248,7 @@ fun SelectFromContactList(
         // Contact list
         if (contacts.isEmpty()) {
             Column(
-                verticalArrangement = Arrangement.Center,
+                verticalArrangement = Arrangement.spacedBy(12.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier
                     .padding(vertical = 4.dp)
@@ -257,13 +261,14 @@ fun SelectFromContactList(
 
                 Text(
                     "Please click the refresh button to fetch contacts",
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MaterialTheme.typography.titleLarge,
+                    textAlign = TextAlign.Center,
                 )
 
                 Image(
                     painter = painterResource(R.drawable.no_content_found),
                     contentDescription = "No contacts available",
-                    modifier = Modifier.size(418.dp),
+                    modifier = Modifier.size(394.dp),
                 )
 
             }

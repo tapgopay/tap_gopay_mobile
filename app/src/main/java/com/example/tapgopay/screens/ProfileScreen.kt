@@ -1,5 +1,6 @@
 package com.example.tapgopay.screens
 
+import android.content.Context
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -13,24 +14,29 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.tapgopay.MainActivity
 import com.example.tapgopay.R
 import com.example.tapgopay.ui.theme.TapGoPayTheme
 import java.time.LocalDateTime
@@ -40,33 +46,41 @@ import java.time.format.FormatStyle
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProfileScreen(
-    navigateToHomeScreen: () -> Unit,
+    navigateTo: (Routes) -> Unit,
+    goBack: () -> Unit,
 ) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
-            TopAppBar(
+            CenterAlignedTopAppBar(
                 title = {
-                    Text("Profile")
+                    Text(
+                        "Profile",
+                        style = MaterialTheme.typography.headlineSmall,
+                    )
                 },
                 navigationIcon = {
                     IconButton(
-                        onClick = navigateToHomeScreen
+                        onClick = goBack,
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.baseline_arrow_back_24),
                             contentDescription = "Previous Screen",
+                            modifier = Modifier.size(32.dp)
                         )
                     }
                 }
             )
         }
     ) { innerPadding ->
+        val scrollState = rememberScrollState()
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(20.dp),
+                .padding(horizontal = 24.dp)
+                .verticalScroll(scrollState),
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Box(
@@ -81,7 +95,7 @@ fun ProfileScreen(
                                 ),
                             ),
                         ),
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(32.dp)
                     ),
             ) {
                 Row(
@@ -114,19 +128,33 @@ fun ProfileScreen(
                         }
                     }
 
-                    val currentTime = LocalDateTime.now()
-                    val formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)
-                    val lastLogin = currentTime.format(formatter)
+                    val context = LocalContext.current
+                    val sharedPreferences = remember {
+                        context.getSharedPreferences(
+                            MainActivity.SHARED_PREFERENCES,
+                            Context.MODE_PRIVATE
+                        )
+                    }
+                    val username = remember {
+                        sharedPreferences.getString(MainActivity.USERNAME, "there") ?: "there"
+                    }
+                    val lastLogin = remember {
+                        val currentTime = LocalDateTime.now()
+                        val formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)
+                        currentTime.format(formatter)
+                    }
 
                     Column {
                         Text(
-                            "Hari Bahadur",
+                            "Hello $username",
                             style = MaterialTheme.typography.titleLarge,
                             color = MaterialTheme.colorScheme.onPrimary,
                         )
                         Text(
                             "Last Login: $lastLogin",
-                            style = MaterialTheme.typography.labelLarge,
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.Normal,
+                            ),
                             color = MaterialTheme.colorScheme.onPrimary,
                         )
                     }
@@ -155,6 +183,15 @@ fun ProfileScreen(
             )
 
             SettingsItem(
+                title = "Send or Request Money",
+                subtitle = "Send or Request money from family, friends or business clients",
+                iconId = R.drawable.qr_code_24dp,
+                onClick = {
+                    navigateTo(Routes.RequestPaymentScreen)
+                }
+            )
+
+            SettingsItem(
                 title = "Delete My Account",
                 iconId = R.drawable.delete_24dp,
                 onClick = {}
@@ -180,25 +217,29 @@ fun SettingsItem(
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 24.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
         ) {
             Icon(
                 painter = painterResource(iconId),
                 contentDescription = null,
+                modifier = Modifier
+                    .size(32.dp)
+                    .padding(top = 8.dp)
             )
 
             Column {
                 Text(
                     title,
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleLarge.copy(
+                        fontWeight = FontWeight.Medium,
                     ),
                 )
 
                 subtitle?.let {
                     Text(
                         subtitle,
-                        style = MaterialTheme.typography.bodyMedium,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Normal,
+                        ),
                     )
                 }
             }
@@ -213,7 +254,8 @@ fun SettingsItem(
 fun PreviewProfileScreen() {
     TapGoPayTheme {
         ProfileScreen(
-            navigateToHomeScreen = {}
+            navigateTo = {},
+            goBack = {},
         )
     }
 }

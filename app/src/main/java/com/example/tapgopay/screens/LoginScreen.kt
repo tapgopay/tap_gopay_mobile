@@ -35,11 +35,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.tapgopay.R
 import com.example.tapgopay.data.AuthViewModel
 import com.example.tapgopay.data.MIN_PIN_LENGTH
+import com.example.tapgopay.data.UIMessage
 import com.example.tapgopay.screens.widgets.InputField
 import com.example.tapgopay.screens.widgets.MessageBanner
 import com.example.tapgopay.screens.widgets.PasswordField
 import com.example.tapgopay.ui.theme.TapGoPayTheme
-import com.example.tapgopay.utils.titlecase
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -53,7 +53,8 @@ fun LoginScreen(
         modifier = Modifier.fillMaxSize()
     ) { innerPadding ->
         Box(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
                 .padding(innerPadding)
                 .padding(horizontal = 24.dp),
         ) {
@@ -160,7 +161,7 @@ fun LoginScreen(
                                     text = "Register",
                                     style = MaterialTheme.typography.titleMedium,
                                     color = MaterialTheme.colorScheme.primary,
-                                    fontWeight = FontWeight.SemiBold,
+                                    fontWeight = FontWeight.Medium,
                                     textDecoration = TextDecoration.Underline,
                                 )
                             }
@@ -170,11 +171,11 @@ fun LoginScreen(
             }
 
             // Message Banner
-            var error by remember { mutableStateOf<String?>(null) }
+            var error by remember { mutableStateOf<UIMessage?>(null) }
 
             LaunchedEffect(Unit) {
-                authViewModel.errors.collectLatest {
-                    error = it
+                authViewModel.uiMessages.collectLatest { uiMessage ->
+                    error = uiMessage
                     launch {
                         delay(5000)  // Hide after n seconds
                         error = null
@@ -187,7 +188,7 @@ fun LoginScreen(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.TopCenter,
                 ) {
-                    MessageBanner(it.titlecase())
+                    MessageBanner(it)
                 }
             }
         }
