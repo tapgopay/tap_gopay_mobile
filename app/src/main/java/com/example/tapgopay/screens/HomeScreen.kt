@@ -52,7 +52,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.tapgopay.R
 import com.example.tapgopay.data.AppViewModel
 import com.example.tapgopay.data.UIMessage
-import com.example.tapgopay.remote.CreditCard
+import com.example.tapgopay.remote.Wallet
 import com.example.tapgopay.screens.widgets.Menu
 import com.example.tapgopay.screens.widgets.MessageBanner
 import com.example.tapgopay.screens.widgets.Transactions
@@ -106,8 +106,8 @@ fun HomeScreen(
         var viewAllTransactions by remember { mutableStateOf(false) }
         val scope = rememberCoroutineScope()
 
-        val creditCards: List<CreditCard> = appViewModel.creditCards.values.toList()
-        var selectedCreditCard by remember { mutableStateOf<CreditCard?>(null) }
+        val wallets: List<Wallet> = appViewModel.wallets.values.toList()
+        var selectedWallet by remember { mutableStateOf<Wallet?>(null) }
         val transferSheetState = rememberModalBottomSheetState()
 
         Box(
@@ -121,7 +121,7 @@ fun HomeScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 horizontalAlignment = Alignment.Start,
             ) {
-                if (creditCards.isEmpty()) {
+                if (wallets.isEmpty()) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -130,14 +130,14 @@ fun HomeScreen(
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Text(
-                            "You have zero credit cards registered",
+                            "You have zero wallets registered",
                             style = MaterialTheme.typography.titleLarge,
                             textAlign = TextAlign.Center,
                         )
                         ElevatedButton(
                             onClick = {
                                 scope.launch {
-                                    appViewModel.newCreditCard()
+                                    appViewModel.newWallet()
                                 }
                             },
                             colors = ButtonDefaults.elevatedButtonColors().copy(
@@ -146,26 +146,26 @@ fun HomeScreen(
                             )
                         ) {
                             Text(
-                                "Create Credit Card",
+                                "Create Wallet",
                                 style = MaterialTheme.typography.titleLarge,
                                 modifier = Modifier.padding(vertical = 8.dp)
                             )
                         }
                     }
                 } else {
-                    val creditCard = remember { creditCards.first() }
+                    val wallet = remember { wallets.first() }
 
-                    CreditCardView(
-                        creditCard = creditCard,
+                    WalletView(
+                        wallet = wallet,
                         onTransferFunds = {
-                            selectedCreditCard = creditCard
+                            selectedWallet = wallet
                             scope.launch {
                                 transferSheetState.expand()
                             }
                         },
                         onToggleFreeze = {
                             scope.launch {
-                                appViewModel.toggleFreeze(creditCard)
+                                appViewModel.toggleFreeze(wallet)
                             }
                         },
                     )
@@ -202,10 +202,10 @@ fun HomeScreen(
                     }
                 }
 
-                selectedCreditCard?.let {
+                selectedWallet?.let {
                     ModalBottomSheet(
                         onDismissRequest = {
-                            selectedCreditCard = null
+                            selectedWallet = null
                         },
                         sheetState = transferSheetState,
                         shape = RoundedCornerShape(12.dp)
@@ -213,7 +213,7 @@ fun HomeScreen(
                         PaymentFlow(
                             sender = it,
                             exitPaymentFlow = {
-                                selectedCreditCard = null
+                                selectedWallet = null
                             }
                         )
                     }
@@ -279,11 +279,11 @@ fun ActionButton(
 
 
 @Composable
-fun CreditCardView(
-    creditCard: CreditCard,
+fun WalletView(
+    wallet: Wallet,
     onTransferFunds: () -> Unit,
     onSetLimits: () -> Unit = {},
-    onViewCardDetails: () -> Unit = {},
+    onViewWalletDetails: () -> Unit = {},
     onToggleFreeze: () -> Unit = {},
     color: Color = successColor,
     displayBalance: Boolean = true,
@@ -327,7 +327,7 @@ fun CreditCardView(
                         )
 
                         Text(
-                            if (creditCard.isActive) "Active" else "Frozen",
+                            if (wallet.isActive) "Active" else "Frozen",
                             style = MaterialTheme.typography.titleMedium,
                         )
                     }
@@ -366,7 +366,7 @@ fun CreditCardView(
                     }
 
                     Text(
-                        creditCard.cardNo,
+                        wallet.walletAddress,
                         style = MaterialTheme.typography.headlineSmall.copy(
                             fontWeight = FontWeight.Medium
                         ),
@@ -396,7 +396,7 @@ fun CreditCardView(
                                 style = MaterialTheme.typography.titleMedium
                             )
                             Text(
-                                creditCard.username.replaceFirstChar { it.uppercaseChar() },
+                                wallet.username.replaceFirstChar { it.uppercaseChar() },
                                 style = MaterialTheme.typography.bodyLarge
                             )
                         }
@@ -437,7 +437,7 @@ fun CreditCardView(
                     )
                 ) {
                     Text(
-                        "Balance KSH ${formatAmount(creditCard.balance)}",
+                        "Balance KSH ${formatAmount(wallet.balance)}",
                         style = MaterialTheme.typography.titleMedium,
                         modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp),
                     )
@@ -454,9 +454,9 @@ fun CreditCardView(
                 .padding(horizontal = 24.dp, vertical = 12.dp),
         ) {
             ActionButton(
-                onClick = onViewCardDetails,
+                onClick = onViewWalletDetails,
                 text = "Details",
-                iconId = R.drawable.credit_card_24dp,
+                iconId = R.drawable.wallet2_24dp,
             )
 
             ActionButton(
@@ -473,7 +473,7 @@ fun CreditCardView(
 
             ActionButton(
                 onClick = onToggleFreeze,
-                text = if (creditCard.isActive) "Freeze" else "UnFreeze",
+                text = if (wallet.isActive) "Freeze" else "UnFreeze",
                 iconId = R.drawable.mode_cool_24dp,
             )
         }

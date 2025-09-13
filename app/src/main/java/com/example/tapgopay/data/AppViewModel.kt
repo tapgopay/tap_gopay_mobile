@@ -17,7 +17,7 @@ import androidx.lifecycle.viewModelScope
 import com.example.tapgopay.MainActivity
 import com.example.tapgopay.remote.Api
 import com.example.tapgopay.remote.Contact
-import com.example.tapgopay.remote.CreditCard
+import com.example.tapgopay.remote.Wallet
 import com.example.tapgopay.remote.TransactionRequest
 import com.example.tapgopay.remote.TransactionResult
 import com.example.tapgopay.remote.asResult
@@ -48,14 +48,14 @@ fun Recipient.toContact(): Contact {
         }
 
         is Recipient.AccountNumber -> {
-            Contact(cardNo = this.value)
+            Contact(walletAddress = this.value)
         }
     }
 }
 
 open class AppViewModel(application: Application) : AndroidViewModel(application) {
     companion object {
-        const val CREDIT_CARD_MIN_LEN: Int = 12
+        const val MIN_WALLET_ADDR_LEN: Int = 12
     }
 
     var paymentRecipient by mutableStateOf<Recipient?>(null)
@@ -67,7 +67,7 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
     val contacts: List<Contact>
         get() = _contacts.toList()
 
-    var creditCards = mutableStateMapOf<String, CreditCard>()
+    var wallets = mutableStateMapOf<String, Wallet>()
         private set
     val transactions = mutableStateListOf<TransactionResult>()
     private val _uiMessages = MutableSharedFlow<UIMessage>(extraBufferCapacity = 1)
@@ -75,7 +75,7 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
 
     init {
         viewModelScope.launch(Dispatchers.IO) {
-            getAllCreditCards()
+            getAllWallets()
         }
     }
 
@@ -159,11 +159,11 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    suspend fun newCreditCard() = withContext(Dispatchers.IO) {
+    suspend fun newWallet() = withContext(Dispatchers.IO) {
         try {
-            _uiMessages.emit(UIMessage.Loading("Creating new credit card"))
+            _uiMessages.emit(UIMessage.Loading("Creating new wallet"))
 
-            val response = Api.creditCardsService.newCreditCard()
+            val response = Api.walletService.newWallet()
             if (!response.isSuccessful) {
                 val errorMessage: String? = response.extractErrorMessage()
                 errorMessage?.let {
@@ -172,17 +172,17 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
                 return@withContext
             }
 
-            response.body()?.let { card ->
-                creditCards[card.cardNo] = card
+            response.body()?.let { wallet ->
+                wallets[wallet.walletAddress] = wallet
             }
         } catch (e: Exception) {
-            handleException(e, "Error creating new credit card")
+            handleException(e, "Error creating new wallet")
         }
     }
 
-    private suspend fun getAllCreditCards() = withContext(Dispatchers.IO) {
+    private suspend fun getAllWallets() = withContext(Dispatchers.IO) {
         try {
-            val response = Api.creditCardsService.getAllCreditCards()
+            val response = Api.walletService.getAllWallets()
             if (!response.isSuccessful) {
                 val errorMessage: String? = response.extractErrorMessage()
                 errorMessage?.let {
@@ -191,24 +191,24 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
                 return@withContext
             }
 
-            response.body()?.forEach { card ->
-                creditCards[card.cardNo] = card
+            response.body()?.forEach { wallet ->
+                wallets[wallet.walletAddress] = wallet
             }
         } catch (e: Exception) {
-            handleException(e, "Error fetching credit cards")
+            handleException(e, "Error fetching wallets")
         }
     }
 
-    suspend fun transferFunds(sender: CreditCard): TransactionResult {
+    suspend fun transferFunds(sender: Wallet): TransactionResult {
         val transactionRequest = TransactionRequest(
-            sender = sender.cardNo,
+            sender = sender.walletAddress,
             receiver = paymentRecipient?.value ?: "",
             amount = amount,
             signature = "",
         )
 
         try {
-            validateCreditCardNo(sender.cardNo)
+            validateWalletAddress(sender.walletAddress)
             validatePaymentRecipient(paymentRecipient)
             validatePin(pin)
             validateAmount(amount)
@@ -231,7 +231,7 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
 
             // Sign transaction details
             val payload = mapOf(
-                "sender" to sender.cardNo,
+                "sender" to sender.walletAddress,
                 "receiver" to paymentRecipient!!.value,
                 "amount" to amount,
                 "created_at" to LocalDateTime.now().toString()
@@ -242,7 +242,7 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
             transactionRequest.signature = Base64.encodeToString(signature, Base64.DEFAULT)
 
             // Send transfer funds request
-            val response = Api.creditCardsService.transferFunds(transactionRequest)
+            val response = Api.walletService.transferFunds(transactionRequest)
             if (!response.isSuccessful) {
                 val errorMessage: String? = response.extractErrorMessage()
                 errorMessage?.let {
@@ -259,19 +259,19 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    suspend fun toggleFreeze(creditCard: CreditCard) = withContext(Dispatchers.IO) {
-        if (creditCard.isActive) {
-            freezeCreditCard(creditCard)
+    suspend fun toggleFreeze(wallet: Wallet) = withContext(Dispatchers.IO) {
+        if (wallet.isActive) {
+            freezeWallet(wallet)
         } else {
-            activateCreditCard(creditCard)
+            activateWallet(wallet)
         }
     }
 
-    private suspend fun freezeCreditCard(creditCard: CreditCard) = withContext(Dispatchers.IO) {
+    private suspend fun freezeWallet(wallet: Wallet) = withContext(Dispatchers.IO) {
         try {
-            _uiMessages.emit(UIMessage.Loading("Freezing credit card"))
+            _uiMessages.emit(UIMessage.Loading("Freezing wallet"))
 
-            val response = Api.creditCardsService.freezeCreditCard(creditCard.cardNo)
+            val response = Api.walletService.freezeWallet(wallet.walletAddress)
             if (!response.isSuccessful) {
                 val errorMessage: String? = response.extractErrorMessage()
                 errorMessage?.let {
@@ -280,19 +280,19 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
                 return@withContext
             }
 
-            creditCard.isActive = false
-            creditCards[creditCard.cardNo] = creditCard
+            wallet.isActive = false
+            wallets[wallet.walletAddress] = wallet
 
         } catch (e: Exception) {
-            handleException(e, "Error freezing credit card")
+            handleException(e, "Error freezing wallet")
         }
     }
 
-    private suspend fun activateCreditCard(creditCard: CreditCard) = withContext(Dispatchers.IO) {
+    private suspend fun activateWallet(wallet: Wallet) = withContext(Dispatchers.IO) {
         try {
-            _uiMessages.emit(UIMessage.Loading("Activating credit card"))
+            _uiMessages.emit(UIMessage.Loading("Activating wallet"))
 
-            val response = Api.creditCardsService.activateCreditCard(creditCard.cardNo)
+            val response = Api.walletService.activateWallet(wallet.walletAddress)
             if (!response.isSuccessful) {
                 val errorMessage: String? = response.extractErrorMessage()
                 errorMessage?.let {
@@ -301,11 +301,11 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
                 return@withContext
             }
 
-            creditCard.isActive = true
-            creditCards[creditCard.cardNo] = creditCard
+            wallet.isActive = true
+            wallets[wallet.walletAddress] = wallet
 
         } catch (e: Exception) {
-            handleException(e, "Error activating credit card")
+            handleException(e, "Error activating wallet")
         }
     }
 
@@ -316,7 +316,7 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
             }
 
             is Recipient.AccountNumber -> {
-                validateCreditCardNo(recipient.value)
+                validateWalletAddress(recipient.value)
             }
 
             null -> {

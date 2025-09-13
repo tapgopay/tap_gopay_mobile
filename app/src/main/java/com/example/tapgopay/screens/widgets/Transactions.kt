@@ -151,14 +151,14 @@ fun TransactionView(
                         if (transaction.isIncoming()) {
                             append(
                                 sender.username.ifEmptyTryDefaults(
-                                    sender.cardNo,
+                                    sender.walletAddress,
                                     sender.phoneNo
                                 )
                             )
                         } else {
                             append(
                                 receiver.username.ifEmptyTryDefaults(
-                                    receiver.cardNo,
+                                    receiver.walletAddress,
                                     receiver.phoneNo
                                 )
                             )

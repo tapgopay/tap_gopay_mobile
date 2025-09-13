@@ -133,7 +133,7 @@ fun RequestPaymentScreen(
                     onValueChange = {
                         paymentRecipient = it
                     },
-                    label = "Credit Card/Phone Number",
+                    label = "Wallet/Phone Number",
                     keyboardType = KeyboardType.Number,
                 )
             }

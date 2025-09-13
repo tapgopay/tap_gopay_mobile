@@ -1,7 +1,7 @@
 package com.example.tapgopay.data
 
 import androidx.core.text.isDigitsOnly
-import com.example.tapgopay.data.AppViewModel.Companion.CREDIT_CARD_MIN_LEN
+import com.example.tapgopay.data.AppViewModel.Companion.MIN_WALLET_ADDR_LEN
 
 const val MIN_NAME_LENGTH = 4
 const val MIN_PIN_LENGTH = 4
@@ -110,13 +110,13 @@ fun validateAmount(amount: String) {
     }
 }
 
-fun validateCreditCardNo(cardNo: String) {
-    val cardNo = cardNo.trim()
-    if (cardNo.isEmpty()) {
-        throw IllegalArgumentException("Card number cannot be empty")
+fun validateWalletAddress(walletAddress: String) {
+    val walletAddress = walletAddress.trim()
+    if (walletAddress.isEmpty()) {
+        throw IllegalArgumentException("Wallet address cannot be empty")
     }
 
-    if (cardNo.length < CREDIT_CARD_MIN_LEN) {
-        throw IllegalArgumentException("Credit card number too short")
+    if (walletAddress.length < MIN_WALLET_ADDR_LEN) {
+        throw IllegalArgumentException("Wallet address too short")
     }
 }
