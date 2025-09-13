@@ -17,14 +17,14 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.tapgopay.data.AppViewModel
 import com.example.tapgopay.data.toContact
-import com.example.tapgopay.remote.CreditCard
+import com.example.tapgopay.remote.Wallet
 import com.example.tapgopay.remote.TransactionResult
 import com.example.tapgopay.screens.widgets.EnterPinNumber
 import kotlinx.coroutines.launch
 
 @Composable
 fun PaymentFlow(
-    sender: CreditCard,
+    sender: Wallet,
     exitPaymentFlow: () -> Unit,
     appViewModel: AppViewModel = viewModel(),
 ) {

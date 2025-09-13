@@ -10,11 +10,11 @@ import retrofit2.http.Path
 import java.time.LocalDateTime
 
 
-data class CreditCard(
+data class Wallet(
     @SerializedName("user_id") val userId: Int,
     val username: String,
     @SerializedName("phone_no") val phoneNo: String,
-    @SerializedName("card_no") val cardNo: String,
+    @SerializedName("wallet_address") val walletAddress: String,
     @SerializedName("initial_deposit") val initialDeposit: Double,
     @SerializedName("is_active") var isActive: Boolean,
     @SerializedName("created_at") val createdAt: LocalDateTime,
@@ -23,7 +23,7 @@ data class CreditCard(
 
 data class Contact(
     val username: String = "",
-    @SerializedName("card_no") val cardNo: String = "",
+    @SerializedName("wallet_address") val walletAddress: String = "",
     @SerializedName("phone_no") val phoneNo: String = "",
 )
 
@@ -37,8 +37,8 @@ data class TransactionRequest(
 
 fun TransactionRequest.asResult(): TransactionResult {
     return TransactionResult(
-        sender = Contact(cardNo = this.sender),
-        receiver = Contact(cardNo = this.receiver),
+        sender = Contact(walletAddress = this.sender),
+        receiver = Contact(walletAddress = this.receiver),
         amount = this.amount,
         createdAt = this.createdAt,
         signature = this.signature,
@@ -59,29 +59,29 @@ fun TransactionResult.isSuccessful(): Boolean {
 }
 
 fun TransactionResult.isIncoming(): Boolean {
-    val receiversCardNo: String = this.receiver.cardNo
+    val receiversCardNo: String = this.receiver.walletAddress
     val receiversPhoneNo: String = this.receiver.phoneNo
-    val isIncomingTransaction = (receiversCardNo.isNotEmpty() && receiversCardNo == alice.cardNo) ||
+    val isIncomingTransaction = (receiversCardNo.isNotEmpty() && receiversCardNo == alice.walletAddress) ||
             (receiversPhoneNo.isNotEmpty() && receiversPhoneNo == alice.phoneNo)
 
     return isIncomingTransaction
 }
 
-interface CreditCardService {
-    @POST("/new-credit-card")
-    suspend fun newCreditCard(): Response<CreditCard>
+interface WalletService {
+    @POST("/new-wallet")
+    suspend fun newWallet(): Response<Wallet>
 
-    @GET("/credit-cards")
-    suspend fun getAllCreditCards(): Response<List<CreditCard>>
+    @GET("/wallets")
+    suspend fun getAllWallets(): Response<List<Wallet>>
 
-    @GET("/credit-cards/{card_no}")
-    suspend fun getCreditCard(@Path("card_no") cardNo: String): Response<CreditCard>
+    @GET("/wallets/{wallet_address}")
+    suspend fun getWallet(@Path("wallet_address") walletAddress: String): Response<Wallet>
 
-    @POST("/credit-cards/{card_no}/freeze")
-    suspend fun freezeCreditCard(@Path("card_no") cardNo: String): Response<MessageResponse>
+    @POST("/wallets/{wallet_address}/freeze")
+    suspend fun freezeWallet(@Path("wallet_address") walletAddress: String): Response<MessageResponse>
 
-    @POST("/credit-cards/{card_no}/activate")
-    suspend fun activateCreditCard(@Path("card_no") cardNo: String): Response<MessageResponse>
+    @POST("/wallets/{wallet_address}/activate")
+    suspend fun activateWallet(@Path("wallet_address") walletAddress: String): Response<MessageResponse>
 
     @POST("/transfer-funds")
     suspend fun transferFunds(@Body req: TransactionRequest): Response<TransactionResult>

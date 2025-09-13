@@ -84,7 +84,7 @@ fun EnterPaymentAmount(
 fun PreviewEnterPaymentAmount() {
     val receiver = Contact(
         username = "Mary Jane",
-        cardNo = "123456789",
+        walletAddress = "123456789",
         phoneNo = "+254 120811682"
     )
 

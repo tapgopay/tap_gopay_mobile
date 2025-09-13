@@ -121,10 +121,10 @@ fun MyBottomAppBar(
 
             val context = LocalContext.current
 
-            // View Credit Card Details
+            // View Wallet Details
             IconButton(
                 onClick = {
-                    // View Credit Details
+                    // View Wallet Details
                     Toast.makeText(context, "Not Yet Implemented", Toast.LENGTH_SHORT)
                         .show()
                 },
@@ -132,7 +132,7 @@ fun MyBottomAppBar(
             ) {
                 Icon(
                     painter = painterResource(R.drawable.wallet_24dp),
-                    contentDescription = "View Credit Card",
+                    contentDescription = "View Wallet",
                     modifier = Modifier.size(32.dp)
                 )
             }

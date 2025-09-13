@@ -64,8 +64,8 @@ object Api {
             .create(AuthService::class.java)
     }
 
-    val creditCardsService: CreditCardService by lazy {
+    val walletService: WalletService by lazy {
         retrofitBuilder
-            .create(CreditCardService::class.java)
+            .create(WalletService::class.java)
     }
 }

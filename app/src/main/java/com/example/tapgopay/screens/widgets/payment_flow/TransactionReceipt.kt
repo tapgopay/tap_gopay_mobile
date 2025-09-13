@@ -144,7 +144,7 @@ fun PreviewPaymentConfirmation() {
     TapGoPayTheme {
         val transactions = generateRandomTransactions()
         val transaction =
-            transactions.find { it.sender.cardNo == alice.cardNo || it.sender.phoneNo == alice.phoneNo }
+            transactions.find { it.sender.walletAddress == alice.walletAddress || it.sender.phoneNo == alice.phoneNo }
 
         transaction?.let {
             TransactionReceipt(

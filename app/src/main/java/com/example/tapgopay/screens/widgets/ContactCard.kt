@@ -62,7 +62,7 @@ fun ContactCardColumn(
                 style = MaterialTheme.typography.titleLarge
             )
             Text(
-                "Account: ${contact.cardNo}",
+                "Account: ${contact.walletAddress}",
                 style = MaterialTheme.typography.titleMedium,
             )
             Text(
@@ -147,7 +147,7 @@ fun ContactCardRow(
 fun PreviewContactCardColumn() {
     val contact = Contact(
         username = "Mary Jane",
-        cardNo = "123456789",
+        walletAddress = "123456789",
         phoneNo = "+254 120811682"
     )
     TapGoPayTheme {
@@ -160,7 +160,7 @@ fun PreviewContactCardColumn() {
 fun PreviewContactCardRow() {
     val contact = Contact(
         username = "Mary Jane",
-        cardNo = "123456789",
+        walletAddress = "123456789",
         phoneNo = "+254 120811682"
     )
     TapGoPayTheme {

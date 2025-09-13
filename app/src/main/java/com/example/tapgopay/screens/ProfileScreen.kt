@@ -169,9 +169,9 @@ fun ProfileScreen(
             )
 
             SettingsItem(
-                title = "Credit Cards",
-                subtitle = "Manage all your physical and virtual credit cards",
-                iconId = R.drawable.credit_card_24dp,
+                title = "Wallets",
+                subtitle = "Manage all your physical and virtual wallets",
+                iconId = R.drawable.wallet2_24dp,
                 onClick = {}
             )
 
