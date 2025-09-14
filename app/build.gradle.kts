@@ -1,5 +1,3 @@
-import com.android.build.api.dsl.Packaging
-
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
@@ -29,12 +27,24 @@ android {
             )
 
             buildConfigField("String", "REMOTE_URL", "\"http://192.168.0.106:5000\"")
-            buildConfigField("String", "ANDROID_API_KEY", "\"MFNFK2dKaSk2ZlwrfDA4Ly9kM3Bqa2JeVnoraCVrRCw=\"")
+            buildConfigField(
+                "String",
+                "ANDROID_API_KEY",
+                "\"MFNFK2dKaSk2ZlwrfDA4Ly9kM3Bqa2JeVnoraCVrRCw=\""
+            )
         }
 
         debug {
             buildConfigField("String", "REMOTE_URL", "\"http://192.168.0.106:5000\"")
-            buildConfigField("String", "ANDROID_API_KEY", "\"MFNFK2dKaSk2ZlwrfDA4Ly9kM3Bqa2JeVnoraCVrRCw=\"")
+            buildConfigField(
+                "String",
+                "ANDROID_API_KEY",
+                "\"MFNFK2dKaSk2ZlwrfDA4Ly9kM3Bqa2JeVnoraCVrRCw=\""
+            )
+        }
+
+        buildFeatures {
+            buildConfig = true
         }
     }
     compileOptions {

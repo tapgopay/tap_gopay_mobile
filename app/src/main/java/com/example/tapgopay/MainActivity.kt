@@ -1,5 +1,6 @@
 package com.example.tapgopay
 
+import android.content.Intent
 import android.os.Bundle
 import android.util.Log
 import android.widget.Toast
@@ -10,11 +11,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
+import androidx.core.content.ContextCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navigation
 import com.example.tapgopay.data.AuthViewModel
+import com.example.tapgopay.remote.NotificationService
 import com.example.tapgopay.screens.ForgotPasswordScreen
 import com.example.tapgopay.screens.HomeScreen
 import com.example.tapgopay.screens.LoginScreen
@@ -65,6 +68,9 @@ class MainActivity : ComponentActivity() {
 
     init {
         Security.addProvider(BouncyCastleProvider())
+
+        val intent = Intent(this, NotificationService::class.java)
+        ContextCompat.startForegroundService(this, intent)
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {

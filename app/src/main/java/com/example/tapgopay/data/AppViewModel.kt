@@ -17,9 +17,9 @@ import androidx.lifecycle.viewModelScope
 import com.example.tapgopay.MainActivity
 import com.example.tapgopay.remote.Api
 import com.example.tapgopay.remote.Contact
-import com.example.tapgopay.remote.Wallet
 import com.example.tapgopay.remote.TransactionRequest
 import com.example.tapgopay.remote.TransactionResult
+import com.example.tapgopay.remote.Wallet
 import com.example.tapgopay.remote.asResult
 import com.example.tapgopay.utils.extractErrorMessage
 import com.google.gson.Gson
