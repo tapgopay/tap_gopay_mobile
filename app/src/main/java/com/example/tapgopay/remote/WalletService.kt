@@ -61,8 +61,9 @@ fun TransactionResult.isSuccessful(): Boolean {
 fun TransactionResult.isIncoming(): Boolean {
     val receiversCardNo: String = this.receiver.walletAddress
     val receiversPhoneNo: String = this.receiver.phoneNo
-    val isIncomingTransaction = (receiversCardNo.isNotEmpty() && receiversCardNo == alice.walletAddress) ||
-            (receiversPhoneNo.isNotEmpty() && receiversPhoneNo == alice.phoneNo)
+    val isIncomingTransaction =
+        (receiversCardNo.isNotEmpty() && receiversCardNo == alice.walletAddress) ||
+                (receiversPhoneNo.isNotEmpty() && receiversPhoneNo == alice.phoneNo)
 
     return isIncomingTransaction
 }
