@@ -16,11 +16,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navigation
+import com.example.tapgopay.data.AppViewModel
 import com.example.tapgopay.data.AuthViewModel
 import com.example.tapgopay.remote.NotificationService
 import com.example.tapgopay.screens.ForgotPasswordScreen
 import com.example.tapgopay.screens.HomeScreen
 import com.example.tapgopay.screens.LoginScreen
+import com.example.tapgopay.screens.PaymentScreen
 import com.example.tapgopay.screens.ProfileScreen
 import com.example.tapgopay.screens.RequestPaymentScreen
 import com.example.tapgopay.screens.ResetPasswordScreen
@@ -32,8 +34,6 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
-import org.bouncycastle.jce.provider.BouncyCastleProvider
-import java.security.Security
 
 class MainActivity : ComponentActivity() {
     companion object {
@@ -66,16 +66,12 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    init {
-        Security.addProvider(BouncyCastleProvider())
-
-        val intent = Intent(this, NotificationService::class.java)
-        ContextCompat.startForegroundService(this, intent)
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         instance = this
+
+        val intent = Intent(this, NotificationService::class.java)
+        ContextCompat.startForegroundService(this, intent)
 
         enableEdgeToEdge()
         setContent {
@@ -104,12 +100,32 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-                        composable(route = Routes.HomeScreen.name) {
-                            HomeScreen(
-                                navigateTo = { route ->
-                                    navController.navigate(route = route.name)
-                                }
-                            )
+                        navigation(
+                            startDestination = Routes.ForgotPasswordScreen.name,
+                            route = "Welcome Home"
+                        ) {
+                            val appViewModel = AppViewModel(instance.application)
+
+                            composable(route = Routes.HomeScreen.name) {
+                                HomeScreen(
+                                    appViewModel = appViewModel,
+                                    navigateTo = { route ->
+                                        navController.navigate(route = route.name)
+                                    }
+                                )
+                            }
+
+                            composable(route = Routes.PaymentScreen.name) {
+                                PaymentScreen(
+                                    appViewModel = appViewModel,
+                                    goBack = {
+                                        navController.popBackStack()
+                                    },
+                                    navigateTo = { route ->
+                                        navController.navigate(route.name)
+                                    }
+                                )
+                            }
                         }
 
                         composable(route = Routes.ProfileScreen.name) {

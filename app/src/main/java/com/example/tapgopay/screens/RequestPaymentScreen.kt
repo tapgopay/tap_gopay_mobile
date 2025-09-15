@@ -105,10 +105,10 @@ fun RequestPaymentScreen(
             )
 
             var amount by remember { mutableStateOf<Double?>(null) }
-            var paymentRecipient by remember { mutableStateOf<String>("") }
-            val qrCode: Bitmap? = remember(amount, paymentRecipient) {
+            var receiver by remember { mutableStateOf<String>("") }
+            val qrCode: Bitmap? = remember(amount, receiver) {
                 val content = mapOf<String, String>(
-                    "receiver" to paymentRecipient,
+                    "receiver" to receiver,
                     "amount" to amount.toString()
                 )
                 return@remember generateQRCode(content)
@@ -129,9 +129,9 @@ fun RequestPaymentScreen(
                     keyboardType = KeyboardType.Number
                 )
                 InputField(
-                    value = paymentRecipient,
+                    value = receiver,
                     onValueChange = {
-                        paymentRecipient = it
+                        receiver = it
                     },
                     label = "Wallet/Phone Number",
                     keyboardType = KeyboardType.Number,
@@ -162,7 +162,7 @@ fun RequestPaymentScreen(
                     containerColor = MaterialTheme.colorScheme.primary,
                     contentColor = MaterialTheme.colorScheme.onPrimary,
                 ),
-                shape = RoundedCornerShape(50),
+                shape = RoundedCornerShape(12.dp),
             ) {
                 Text(
                     text = "Request Payment",

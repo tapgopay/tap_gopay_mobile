@@ -1,11 +1,11 @@
 package com.example.tapgopay.screens
 
 import android.app.Application
+import android.widget.Toast
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -16,6 +16,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
@@ -42,13 +44,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.tapgopay.R
 import com.example.tapgopay.data.AppViewModel
 import com.example.tapgopay.data.UIMessage
@@ -56,7 +58,6 @@ import com.example.tapgopay.remote.Wallet
 import com.example.tapgopay.screens.widgets.Menu
 import com.example.tapgopay.screens.widgets.MessageBanner
 import com.example.tapgopay.screens.widgets.Transactions
-import com.example.tapgopay.screens.widgets.payment_flow.PaymentFlow
 import com.example.tapgopay.ui.theme.TapGoPayTheme
 import com.example.tapgopay.ui.theme.successColor
 import com.example.tapgopay.utils.formatAmount
@@ -67,8 +68,8 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
-    appViewModel: AppViewModel = viewModel(),
-    navigateTo: (route: Routes) -> Unit,
+    appViewModel: AppViewModel,
+    navigateTo: (Routes) -> Unit,
 ) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -107,8 +108,6 @@ fun HomeScreen(
         val scope = rememberCoroutineScope()
 
         val wallets: List<Wallet> = appViewModel.wallets.values.toList()
-        var selectedWallet by remember { mutableStateOf<Wallet?>(null) }
-        val transferSheetState = rememberModalBottomSheetState()
 
         Box(
             modifier = Modifier
@@ -153,24 +152,29 @@ fun HomeScreen(
                         }
                     }
                 } else {
-                    val wallet = remember { wallets.first() }
-
-                    WalletView(
-                        wallet = wallet,
-                        onTransferFunds = {
-                            selectedWallet = wallet
-                            scope.launch {
-                                transferSheetState.expand()
+                    LazyRow(
+                        modifier = Modifier.fillMaxWidth(),
+                    ) {
+                        itemsIndexed(wallets) { _, wallet ->
+                            Box(
+                                modifier = Modifier.fillParentMaxWidth(),
+                            ) {
+                                Wallet(
+                                    wallet = wallet,
+                                    onTransferFunds = {
+                                        appViewModel.sender = wallet
+                                        navigateTo(Routes.PaymentScreen)
+                                    },
+                                    onToggleFreeze = {
+                                        scope.launch {
+                                            appViewModel.toggleFreeze(wallet)
+                                        }
+                                    },
+                                )
                             }
-                        },
-                        onToggleFreeze = {
-                            scope.launch {
-                                appViewModel.toggleFreeze(wallet)
-                            }
-                        },
-                    )
+                        }
+                    }
                 }
-
 
                 Transactions(
                     transactions = appViewModel.transactions,
@@ -199,23 +203,6 @@ fun HomeScreen(
                         ) {
                             Transactions(appViewModel.transactions)
                         }
-                    }
-                }
-
-                selectedWallet?.let {
-                    ModalBottomSheet(
-                        onDismissRequest = {
-                            selectedWallet = null
-                        },
-                        sheetState = transferSheetState,
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        PaymentFlow(
-                            sender = it,
-                            exitPaymentFlow = {
-                                selectedWallet = null
-                            }
-                        )
                     }
                 }
             }
@@ -279,19 +266,17 @@ fun ActionButton(
 
 
 @Composable
-fun WalletView(
+fun Wallet(
     wallet: Wallet,
     onTransferFunds: () -> Unit,
     onSetLimits: () -> Unit = {},
     onViewWalletDetails: () -> Unit = {},
     onToggleFreeze: () -> Unit = {},
-    color: Color = successColor,
+    color: Color = if (wallet.isActive) successColor else Color.Gray,
     displayBalance: Boolean = true,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable {},
+        modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Card(
@@ -323,7 +308,7 @@ fun WalletView(
                         Box(
                             modifier = Modifier
                                 .size(12.dp)
-                                .background(successColor, shape = CircleShape)
+                                .background(color, shape = CircleShape)
                         )
 
                         Text(
@@ -371,9 +356,6 @@ fun WalletView(
                             fontWeight = FontWeight.Medium
                         ),
                     )
-
-                    //
-
                 }
 
                 Box(
@@ -459,8 +441,17 @@ fun WalletView(
                 iconId = R.drawable.wallet2_24dp,
             )
 
+            val context = LocalContext.current
+
             ActionButton(
-                onClick = onTransferFunds,
+                onClick = {
+                    if (!wallet.isActive) {
+                        Toast.makeText(context, "Wallet is not active", Toast.LENGTH_LONG)
+                            .show()
+                        return@ActionButton
+                    }
+                    onTransferFunds()
+                },
                 text = "Transfer",
                 iconId = R.drawable.arrow_upward_24dp,
             )

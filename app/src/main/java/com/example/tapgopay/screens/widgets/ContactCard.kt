@@ -7,13 +7,13 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -80,7 +80,7 @@ fun ContactCardRow(
     onClick: () -> Unit,
 ) {
     val containerColor =
-        if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface
+        if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onPrimary
     val contentColor =
         if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.scrim
     contact.username
@@ -94,50 +94,45 @@ fun ContactCardRow(
             .clickable { onClick() }
     ) {
         Row(
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = Arrangement.spacedBy(24.dp),
             verticalAlignment = Alignment.CenterVertically,
-            modifier = Modifier.padding(16.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
         ) {
-            Row(
-                modifier = Modifier.weight(1f),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            Box(
+                modifier = Modifier
+                    .size(52.dp)
+                    .background(
+                        color = MaterialTheme.colorScheme.surfaceContainer,
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center,
             ) {
-                Box(
-                    modifier = Modifier
-                        .size(52.dp)
-                        .background(
-                            color = MaterialTheme.colorScheme.surfaceContainer,
-                            shape = CircleShape
-                        ),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        contact.username.first().uppercase(),
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.Medium,
-                        ),
-                    )
+                val profilePic by remember {
+                    mutableIntStateOf(defaultProfilePics.random())
                 }
 
-                Column {
-                    Text(
-                        contact.username,
-                        style = MaterialTheme.typography.titleLarge,
-                        color = contentColor,
-                    )
-                    Text(
-                        contact.phoneNo,
-                        style = MaterialTheme.typography.titleMedium,
-                        color = contentColor,
-                    )
-                }
+                Image(
+                    painter = painterResource(profilePic),
+                    contentDescription = null,
+                    modifier = Modifier.size(96.dp)
+                )
             }
 
-            Icon(
-                painter = painterResource(R.drawable.star_24dp),
-                contentDescription = "Add to favorites",
-                tint = contentColor,
-            )
+            Column {
+                Text(
+                    contact.username,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Medium,
+                    color = contentColor,
+                )
+                Text(
+                    contact.phoneNo,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = contentColor,
+                )
+            }
         }
     }
 }

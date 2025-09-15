@@ -128,6 +128,7 @@ open class AuthViewModel(application: Application) : AndroidViewModel(applicatio
                 return@withContext false
             }
 
+            _uiMessages.emit(UIMessage.Info("Account created successfully"))
             return@withContext true
 
         } catch (e: Exception) {
@@ -147,10 +148,12 @@ open class AuthViewModel(application: Application) : AndroidViewModel(applicatio
                 UIMessage.Loading("Logging in to your account")
             )
 
+            val hashedPin: String? = sha256Hash(pin.toByteArray())?.toHexString()
+
             // Use user's email as private key's filename
             val filesDir = getApplication<Application>().filesDir.toString()
             val privKeyFile = File(
-                filesDir, "$email.key"
+                filesDir, "$email+$hashedPin.key"
             )
             val privateKey: PrivateKey = loadAndDecryptPrivateKey(pin, privKeyFile) ?: run {
                 // Error loading user's private key.
@@ -195,6 +198,8 @@ open class AuthViewModel(application: Application) : AndroidViewModel(applicatio
                 putString(MainActivity.USERNAME, username)
                 putString(MainActivity.PRIVATE_KEY_FILENAME, privKeyFile.name)
             }
+
+            _uiMessages.emit(UIMessage.Info("Login successful"))
             return@withContext true
 
         } catch (e: Exception) {

@@ -72,14 +72,14 @@ fun SignUpScreen(
                 ) {
                     Text(
                         text = "Join TapGoPay today",
-                        style = MaterialTheme.typography.headlineLarge,
+                        style = MaterialTheme.typography.headlineSmall,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(end = 24.dp),
                     )
 
                     Text(
                         text = "Create An Account",
-                        style = MaterialTheme.typography.headlineSmall,
+                        style = MaterialTheme.typography.titleMedium,
                     )
                 }
 
@@ -160,7 +160,8 @@ fun SignUpScreen(
                                 scope.launch {
                                     val signupSuccess = authViewModel.registerUser()
                                     if (signupSuccess) {
-                                        navigateTo(Routes.SignUpScreen)
+                                        delay(2000)
+                                        navigateTo(Routes.LoginScreen)
                                     }
                                 }
                             },
@@ -171,7 +172,7 @@ fun SignUpScreen(
                                 containerColor = MaterialTheme.colorScheme.primary,
                                 contentColor = MaterialTheme.colorScheme.onPrimary,
                             ),
-                            shape = RoundedCornerShape(50),
+                            shape = RoundedCornerShape(12.dp),
                         ) {
                             Text(
                                 text = "Create Account",

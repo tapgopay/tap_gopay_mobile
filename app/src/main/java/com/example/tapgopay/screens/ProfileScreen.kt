@@ -229,9 +229,7 @@ fun SettingsItem(
             Column {
                 Text(
                     title,
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Medium,
-                    ),
+                    style = MaterialTheme.typography.titleMedium,
                 )
 
                 subtitle?.let {

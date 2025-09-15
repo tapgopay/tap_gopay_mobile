@@ -101,7 +101,7 @@ class NotificationService : Service() {
         val sendersPhoneNo = t.sender.phoneNo.ifEmpty { "+254 7xx xxx xxx " }
         val message =
             "Confirmed. ${t.transactionId} You have received KSH ${formatAmount(t.amount)} from $sendersWalletAddress, phoneNumber $sendersPhoneNo. ${
-                formatDatetime(t.createdAt)
+                formatDatetime(t.timestamp)
             }"
 
         val channelId = "websocket_channel"

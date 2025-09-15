@@ -7,7 +7,6 @@ import android.provider.ContactsContract
 import android.util.Base64
 import android.util.Log
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -58,9 +57,10 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
         const val MIN_WALLET_ADDR_LEN: Int = 12
     }
 
-    var paymentRecipient by mutableStateOf<Recipient?>(null)
+    var sender by mutableStateOf<Wallet?>(null)
+    var receiver by mutableStateOf<Recipient?>(null)
         private set
-    var amount by mutableDoubleStateOf(0.0)
+    var amount by mutableStateOf("0.0")
     var pin by mutableStateOf("")
 
     private var _contacts by mutableStateOf(listOf<Contact>())
@@ -79,15 +79,16 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun setPaymentRecipient(recipient: Recipient): Boolean {
+    fun setReceiver(newReceiver: Recipient): Boolean {
         try {
-            validatePaymentRecipient(recipient)
-            paymentRecipient = recipient
+            validateReceiver(newReceiver)
+            receiver = newReceiver
             return true
         } catch (e: Exception) {
             viewModelScope.launch {
                 _uiMessages.emit(UIMessage.Error("Error selecting payment recipient"))
             }
+            Log.e(MainActivity.TAG, "Error setting receiver; ${e.message}")
             return false
         }
     }
@@ -199,17 +200,38 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    fun isReadyToSend(): Boolean {
+        try {
+            validateWalletAddress(sender?.walletAddress)
+            validateReceiver(receiver)
+            validateAmount(amount)
+
+            // We don't validate the pin at this point
+            // This function only checks if user is ready to enter their pin
+            // to complete the transaction
+
+            return true
+        } catch (e: Exception) {
+            viewModelScope.launch {
+                e.message?.let {
+                    _uiMessages.emit(UIMessage.Error(it))
+                }
+            }
+            return false
+        }
+    }
+
     suspend fun transferFunds(sender: Wallet): TransactionResult {
         val transactionRequest = TransactionRequest(
             sender = sender.walletAddress,
-            receiver = paymentRecipient?.value ?: "",
-            amount = amount,
+            receiver = receiver?.value ?: "",
+            amount = amount.toDoubleOrNull() ?: 0.0,
             signature = "",
         )
 
         try {
             validateWalletAddress(sender.walletAddress)
-            validatePaymentRecipient(paymentRecipient)
+            validateReceiver(receiver)
             validatePin(pin)
             validateAmount(amount)
 
@@ -232,9 +254,9 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
             // Sign transaction details
             val payload = mapOf(
                 "sender" to sender.walletAddress,
-                "receiver" to paymentRecipient!!.value,
+                "receiver" to receiver!!.value,
                 "amount" to amount,
-                "created_at" to LocalDateTime.now().toString()
+                "timestamp" to LocalDateTime.now().toString()
             )
             val data: ByteArray = Gson().toJson(payload).toByteArray()
             val signature: ByteArray =
@@ -280,8 +302,11 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
                 return@withContext
             }
 
-            wallet.isActive = false
-            wallets[wallet.walletAddress] = wallet
+            wallets.replace(
+                wallet.walletAddress,
+                wallet,
+                wallet.copy(isActive = false)
+            )
 
         } catch (e: Exception) {
             handleException(e, "Error freezing wallet")
@@ -301,26 +326,29 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
                 return@withContext
             }
 
-            wallet.isActive = true
-            wallets[wallet.walletAddress] = wallet
+            wallets.replace(
+                wallet.walletAddress,
+                wallet,
+                wallet.copy(isActive = true)
+            )
 
         } catch (e: Exception) {
             handleException(e, "Error activating wallet")
         }
     }
 
-    private fun validatePaymentRecipient(recipient: Recipient?) {
-        when (recipient) {
+    private fun validateReceiver(newReceiver: Recipient?) {
+        when (newReceiver) {
             is Recipient.PhoneNumber -> {
-                validatePhoneNumber(recipient.value)
+                validatePhoneNumber(newReceiver.value)
             }
 
             is Recipient.AccountNumber -> {
-                validateWalletAddress(recipient.value)
+                validateWalletAddress(newReceiver.value)
             }
 
             null -> {
-                throw IllegalArgumentException("Payment recipient cannot be empty")
+                throw IllegalArgumentException("Payment receiver cannot be empty")
             }
         }
     }

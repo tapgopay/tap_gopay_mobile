@@ -17,7 +17,7 @@ data class Wallet(
     @SerializedName("wallet_address") val walletAddress: String,
     @SerializedName("initial_deposit") val initialDeposit: Double,
     @SerializedName("is_active") var isActive: Boolean,
-    @SerializedName("created_at") val createdAt: LocalDateTime,
+    @SerializedName("timestamp") val timestamp: LocalDateTime,
     val balance: Double,
 )
 
@@ -31,7 +31,7 @@ data class TransactionRequest(
     val sender: String,
     val receiver: String,
     val amount: Double,
-    @SerializedName("created_at") val createdAt: LocalDateTime = LocalDateTime.now(),
+    @SerializedName("timestamp") val timestamp: String = LocalDateTime.now().toString(),
     var signature: String, // Base64-encoded string
 )
 
@@ -40,7 +40,7 @@ fun TransactionRequest.asResult(): TransactionResult {
         sender = Contact(walletAddress = this.sender),
         receiver = Contact(walletAddress = this.receiver),
         amount = this.amount,
-        createdAt = this.createdAt,
+        timestamp = this.timestamp,
         signature = this.signature,
     )
 }
@@ -50,7 +50,7 @@ data class TransactionResult(
     val sender: Contact,
     val receiver: Contact,
     val amount: Double,
-    @SerializedName("created_at") val createdAt: LocalDateTime = LocalDateTime.now(),
+    @SerializedName("timestamp") val timestamp: String = LocalDateTime.now().toString(),
     var signature: String, // Base64-encoded string
 )
 

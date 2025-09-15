@@ -8,6 +8,7 @@ import java.io.File
 import java.security.KeyFactory
 import java.security.KeyPair
 import java.security.KeyPairGenerator
+import java.security.MessageDigest
 import java.security.PrivateKey
 import java.security.PublicKey
 import java.security.SecureRandom
@@ -53,9 +54,8 @@ private fun generateKeyPair(
     val keyPairGenerator = KeyPairGenerator.getInstance("EC")
     val ecSpec = ECGenParameterSpec(curveName)
 
-    // Modern DRBG-based SecureRandom
     val random = SecureRandom.getInstanceStrong()
-    random.setSeed(seed) // deterministic: same seed -> same sequence
+    random.setSeed(seed)
 
     keyPairGenerator.initialize(ecSpec, random)
     return keyPairGenerator.generateKeyPair()
@@ -133,6 +133,18 @@ fun loadAndDecryptPrivateKey(password: String, file: File): PrivateKey? {
 
     } catch (e: Exception) {
         Log.e(MainActivity.TAG, "Error loading private key; ${e.message}")
+        return null
+    }
+}
+
+fun sha256Hash(data: ByteArray): ByteArray? {
+    try {
+        val messageDigest = MessageDigest.getInstance("SHA256")
+        messageDigest.update(data)
+        return messageDigest.digest()
+
+    } catch (e: Exception) {
+        Log.e(MainActivity.TAG, "Error hashing data; ${e.message}")
         return null
     }
 }

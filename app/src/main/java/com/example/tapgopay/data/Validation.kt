@@ -1,5 +1,6 @@
 package com.example.tapgopay.data
 
+import android.util.Patterns
 import androidx.core.text.isDigitsOnly
 import com.example.tapgopay.data.AppViewModel.Companion.MIN_WALLET_ADDR_LEN
 
@@ -19,9 +20,8 @@ fun validateOtp(otp: String) {
     }
 }
 
-fun validatePhoneNumber(number: String) {
-    val regex = Regex("^\\+?[0-9]{7,15}\$")
-    val match = regex.matches(number)
+fun validatePhoneNumber(phone: String) {
+    val match = Patterns.PHONE.matcher(phone).matches()
     if (!match) {
         throw IllegalArgumentException("Invalid phone number")
     }
@@ -110,7 +110,11 @@ fun validateAmount(amount: String) {
     }
 }
 
-fun validateWalletAddress(walletAddress: String) {
+fun validateWalletAddress(walletAddress: String?) {
+    if (walletAddress == null) {
+        throw IllegalArgumentException("Wallet address cannot be empty")
+    }
+
     val walletAddress = walletAddress.trim()
     if (walletAddress.isEmpty()) {
         throw IllegalArgumentException("Wallet address cannot be empty")

@@ -1,8 +1,9 @@
-package com.example.tapgopay.screens.widgets.payment_flow
+package com.example.tapgopay.screens.widgets
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,6 +13,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ElevatedButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,11 +28,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.tapgopay.R
 import com.example.tapgopay.data.alice
-import com.example.tapgopay.data.generateRandomTransactions
+import com.example.tapgopay.data.generateFakeTransaction
 import com.example.tapgopay.remote.TransactionResult
 import com.example.tapgopay.remote.isSuccessful
-import com.example.tapgopay.screens.widgets.ContactCardColumn
-import com.example.tapgopay.screens.widgets.Navbar
 import com.example.tapgopay.ui.theme.TapGoPayTheme
 import com.example.tapgopay.ui.theme.successColor
 import com.example.tapgopay.utils.formatAmount
@@ -45,10 +46,17 @@ fun TransactionReceipt(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Navbar(
-            title = "",
-            goBack = goBack,
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            IconButton(onClick = goBack) {
+                Icon(
+                    painter = painterResource(R.drawable.baseline_arrow_back_24),
+                    contentDescription = "Previous Page",
+                    modifier = Modifier.size(32.dp),
+                )
+            }
+        }
 
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -142,7 +150,7 @@ fun TransactionReceipt(
 @Composable
 fun PreviewPaymentConfirmation() {
     TapGoPayTheme {
-        val transactions = generateRandomTransactions()
+        val transactions = List(10) { generateFakeTransaction() }
         val transaction =
             transactions.find { it.sender.walletAddress == alice.walletAddress || it.sender.phoneNo == alice.phoneNo }
 

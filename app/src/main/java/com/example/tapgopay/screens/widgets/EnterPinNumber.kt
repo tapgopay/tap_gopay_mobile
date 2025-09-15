@@ -18,6 +18,8 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ElevatedButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -29,21 +31,23 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.example.tapgopay.R
 import com.example.tapgopay.data.MIN_PIN_LENGTH
 import com.example.tapgopay.ui.theme.TapGoPayTheme
 
 @Composable
 fun EnterPinNumber(
-    subtitle: String = "",
-    goBack: () -> Unit,
-    onContinue: (String) -> Unit,
+    title: String,
+    onPinEntered: (String) -> Unit,
+    onCancel: () -> Unit,
+    onForgotPin: (() -> Unit)? = null,
     isLoading: Boolean = false,
-    forgotPin: (() -> Unit)? = null,
 ) {
     var pin by remember { mutableStateOf("") }
 
@@ -54,26 +58,29 @@ fun EnterPinNumber(
         verticalArrangement = Arrangement.spacedBy(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        Navbar(
-            title = "",
-            goBack = goBack,
-        )
-
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(horizontal = 24.dp),
+        Row(
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 8.dp),
         ) {
-            Text(
-                "Enter Your Pin",
-                style = MaterialTheme.typography.headlineSmall,
-            )
-
-            Text(
-                subtitle,
-                style = MaterialTheme.typography.titleMedium,
-                textAlign = TextAlign.Center,
-            )
+            IconButton(
+                onClick = onCancel,
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.baseline_arrow_back_24),
+                    contentDescription = "Previous Page",
+                    modifier = Modifier.size(32.dp),
+                )
+            }
         }
+
+        Text(
+            title,
+            style = MaterialTheme.typography.headlineSmall,
+            textAlign = TextAlign.Center,
+        )
 
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -114,9 +121,9 @@ fun EnterPinNumber(
                 }
             }
 
-            forgotPin?.let {
+            onForgotPin?.let {
                 TextButton(
-                    onClick = forgotPin,
+                    onClick = onForgotPin,
                 ) {
                     Text(
                         "Forgot Your Pin?",
@@ -145,7 +152,7 @@ fun EnterPinNumber(
                 if (pin.length != MIN_PIN_LENGTH) {
                     return@ElevatedButton
                 }
-                onContinue(pin)
+                onPinEntered(pin)
             },
             enabled = pin.length == MIN_PIN_LENGTH,
             modifier = Modifier
@@ -155,7 +162,7 @@ fun EnterPinNumber(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
             ),
-            shape = RoundedCornerShape(50),
+            shape = RoundedCornerShape(12.dp),
         ) {
             Text(
                 text = "Continue",
@@ -171,9 +178,9 @@ fun EnterPinNumber(
 fun PreviewEnterPinNumber() {
     TapGoPayTheme {
         EnterPinNumber(
-            subtitle = "Never share your pin with anyone",
-            goBack = {},
-            onContinue = {},
+            title = "Enter your PIN",
+            onPinEntered = {},
+            onCancel = {},
         )
     }
 }

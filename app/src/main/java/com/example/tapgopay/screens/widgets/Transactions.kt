@@ -37,7 +37,7 @@ import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.tapgopay.R
-import com.example.tapgopay.data.generateRandomTransactions
+import com.example.tapgopay.data.generateFakeTransaction
 import com.example.tapgopay.remote.TransactionResult
 import com.example.tapgopay.remote.isIncoming
 import com.example.tapgopay.ui.theme.TapGoPayTheme
@@ -95,7 +95,7 @@ fun Transactions(
                         horizontalAlignment = Alignment.CenterHorizontally,
                     ) {
                         Image(
-                            painter = painterResource(R.drawable.no_transactions_24dp),
+                            painter = painterResource(R.drawable.no_bank_found_24dp),
                             contentDescription = "No transactions found",
                             modifier = Modifier.size(256.dp),
                         )
@@ -109,14 +109,14 @@ fun Transactions(
             }
 
             itemsIndexed(transactions) { index, transaction ->
-                TransactionView(transaction)
+                Transaction(transaction)
             }
         }
     }
 }
 
 @Composable
-fun TransactionView(
+fun Transaction(
     transaction: TransactionResult,
 ) {
     val sender by remember { mutableStateOf(transaction.sender) }
@@ -172,7 +172,7 @@ fun TransactionView(
                 )
 
                 Text(
-                    formatDatetime(transaction.createdAt),
+                    formatDatetime(transaction.timestamp),
                     style = MaterialTheme.typography.titleMedium,
                 )
             }
@@ -208,11 +208,11 @@ fun TransactionView(
 @Preview(showBackground = true)
 @Composable
 fun PreviewTransactionCard() {
-    val transactions = generateRandomTransactions()
+    val transactions = List(10) { generateFakeTransaction() }
     val transaction = transactions.random()
 
     TapGoPayTheme {
-        TransactionView(transaction)
+        Transaction(transaction)
     }
 }
 
@@ -221,7 +221,7 @@ fun PreviewTransactionCard() {
 fun PreviewTransactions() {
     TapGoPayTheme {
         Transactions(
-            transactions = generateRandomTransactions(),
+            transactions = List(10) { generateFakeTransaction() },
             onViewAllTransactions = {},
         )
     }
