@@ -9,4 +9,5 @@ enum class Routes {
     ResetPasswordScreen,
     RequestPaymentScreen,
     ScanQRCodeScreen,
+    PaymentScreen,
 }

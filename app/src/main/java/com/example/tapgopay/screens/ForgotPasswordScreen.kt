@@ -149,7 +149,7 @@ fun ForgotPasswordScreen(
                             containerColor = MaterialTheme.colorScheme.primary,
                             contentColor = MaterialTheme.colorScheme.onPrimary,
                         ),
-                        shape = RoundedCornerShape(50),
+                        shape = RoundedCornerShape(12.dp),
                     ) {
                         Text(
                             text = "Send Password Reset",

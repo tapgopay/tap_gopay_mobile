@@ -39,7 +39,7 @@ import com.example.tapgopay.ui.theme.TapGoPayTheme
 
 @Composable
 fun EnterPinNumber(
-    subtitle: String = "",
+    title: String = "Enter Your Pin",
     goBack: () -> Unit,
     onContinue: (String) -> Unit,
     isLoading: Boolean = false,
@@ -59,21 +59,11 @@ fun EnterPinNumber(
             goBack = goBack,
         )
 
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(horizontal = 24.dp),
-        ) {
-            Text(
-                "Enter Your Pin",
-                style = MaterialTheme.typography.headlineSmall,
-            )
-
-            Text(
-                subtitle,
-                style = MaterialTheme.typography.titleMedium,
-                textAlign = TextAlign.Center,
-            )
-        }
+        Text(
+            title,
+            style = MaterialTheme.typography.headlineSmall,
+            textAlign = TextAlign.Center,
+        )
 
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -155,7 +145,7 @@ fun EnterPinNumber(
                 containerColor = MaterialTheme.colorScheme.primary,
                 contentColor = MaterialTheme.colorScheme.onPrimary,
             ),
-            shape = RoundedCornerShape(50),
+            shape = RoundedCornerShape(12.dp),
         ) {
             Text(
                 text = "Continue",
@@ -171,7 +161,6 @@ fun EnterPinNumber(
 fun PreviewEnterPinNumber() {
     TapGoPayTheme {
         EnterPinNumber(
-            subtitle = "Never share your pin with anyone",
             goBack = {},
             onContinue = {},
         )

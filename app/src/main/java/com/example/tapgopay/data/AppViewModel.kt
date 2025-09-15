@@ -58,6 +58,7 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
         const val MIN_WALLET_ADDR_LEN: Int = 12
     }
 
+    var selectedWallet by mutableStateOf<Wallet?>(null)
     var paymentRecipient by mutableStateOf<Recipient?>(null)
         private set
     var amount by mutableDoubleStateOf(0.0)
@@ -89,6 +90,12 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
                 _uiMessages.emit(UIMessage.Error("Error selecting payment recipient"))
             }
             return false
+        }
+    }
+
+    fun setAmount(newAmount: String) {
+        newAmount.toDoubleOrNull()?.let {
+            amount = it
         }
     }
 
