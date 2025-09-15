@@ -4,6 +4,7 @@ import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -13,6 +14,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
@@ -27,22 +29,20 @@ import com.example.tapgopay.screens.Routes
 import com.example.tapgopay.ui.theme.TapGoPayTheme
 
 @Composable
-fun getContainerColor(currentRoute: Routes, selectedRoute: Routes): Color {
-    return if (currentRoute == selectedRoute) {
-        MaterialTheme.colorScheme.primary
+fun getContainerColor(isSelected: Boolean): Color {
+    return if (isSelected) {
+        MaterialTheme.colorScheme.onPrimary
     } else {
-        MaterialTheme.colorScheme.surfaceContainer
+        Color.Transparent
     }
 }
 
 @Composable
-fun getContentColor(currentRoute: Routes, selectedRoute: Routes): Color {
-    return if (currentRoute == selectedRoute) {
-        MaterialTheme.colorScheme.onPrimary
+fun getContentColor(isSelected: Boolean): Color {
+    return if (isSelected) {
+        MaterialTheme.colorScheme.scrim
     } else {
-        MaterialTheme.colorScheme.scrim.copy(
-            alpha = 0.6f
-        )
+        MaterialTheme.colorScheme.onPrimary
     }
 }
 
@@ -54,9 +54,10 @@ fun MyBottomAppBar(
 ) {
     BottomAppBar(
         modifier = modifier
+            .height(64.dp)
             .clip(RoundedCornerShape(50))
             .shadow(elevation = 12.dp, shape = RoundedCornerShape(50)),
-        containerColor = MaterialTheme.colorScheme.surfaceContainer,
+        containerColor = MaterialTheme.colorScheme.primary,
         contentColor = MaterialTheme.colorScheme.scrim.copy(
             alpha = 0.6f
         ),
@@ -64,6 +65,7 @@ fun MyBottomAppBar(
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             // Home
             IconButton(
@@ -72,8 +74,8 @@ fun MyBottomAppBar(
                 },
                 modifier = Modifier.size(56.dp),
                 colors = IconButtonDefaults.iconButtonColors().copy(
-                    containerColor = getContainerColor(currentRoute, Routes.HomeScreen),
-                    contentColor = getContentColor(currentRoute, Routes.HomeScreen),
+                    containerColor = getContainerColor(currentRoute == Routes.HomeScreen),
+                    contentColor = getContentColor(currentRoute == Routes.HomeScreen),
                 )
             ) {
                 Icon(
@@ -90,8 +92,8 @@ fun MyBottomAppBar(
                 },
                 modifier = Modifier.size(56.dp),
                 colors = IconButtonDefaults.iconButtonColors().copy(
-                    containerColor = getContainerColor(currentRoute, Routes.RequestPaymentScreen),
-                    contentColor = getContentColor(currentRoute, Routes.RequestPaymentScreen),
+                    containerColor = getContainerColor(currentRoute == Routes.RequestPaymentScreen),
+                    contentColor = getContentColor(currentRoute == Routes.RequestPaymentScreen),
                 )
             ) {
                 Icon(
@@ -108,8 +110,8 @@ fun MyBottomAppBar(
                 },
                 modifier = Modifier.size(56.dp),
                 colors = IconButtonDefaults.iconButtonColors().copy(
-                    containerColor = getContainerColor(currentRoute, Routes.ScanQRCodeScreen),
-                    contentColor = getContentColor(currentRoute, Routes.ScanQRCodeScreen),
+                    containerColor = getContainerColor(currentRoute == Routes.ScanQRCodeScreen),
+                    contentColor = getContentColor(currentRoute == Routes.ScanQRCodeScreen),
                 )
             ) {
                 Icon(
@@ -128,7 +130,11 @@ fun MyBottomAppBar(
                     Toast.makeText(context, "Not Yet Implemented", Toast.LENGTH_SHORT)
                         .show()
                 },
-                modifier = Modifier.size(56.dp)
+                modifier = Modifier.size(56.dp),
+                colors = IconButtonDefaults.iconButtonColors().copy(
+                    containerColor = getContainerColor(false),
+                    contentColor = getContentColor(false),
+                )
             ) {
                 Icon(
                     painter = painterResource(R.drawable.wallet_24dp),

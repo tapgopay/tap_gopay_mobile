@@ -34,8 +34,6 @@ import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import com.journeyapps.barcodescanner.ScanContract
 import com.journeyapps.barcodescanner.ScanOptions
-import org.bouncycastle.jce.provider.BouncyCastleProvider
-import java.security.Security
 
 class MainActivity : ComponentActivity() {
     companion object {
@@ -68,16 +66,12 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    init {
-        Security.addProvider(BouncyCastleProvider())
-
-        val intent = Intent(this, NotificationService::class.java)
-        ContextCompat.startForegroundService(this, intent)
-    }
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         instance = this
+
+        val intent = Intent(this, NotificationService::class.java)
+        ContextCompat.startForegroundService(this, intent)
 
         enableEdgeToEdge()
         setContent {

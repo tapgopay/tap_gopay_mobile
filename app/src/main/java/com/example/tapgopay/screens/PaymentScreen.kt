@@ -7,6 +7,7 @@ import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -24,7 +25,6 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -37,6 +37,7 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,6 +53,7 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -59,16 +61,24 @@ import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.example.tapgopay.R
 import com.example.tapgopay.data.AppViewModel
+import com.example.tapgopay.data.Recipient
+import com.example.tapgopay.data.UIMessage
 import com.example.tapgopay.data.alice
 import com.example.tapgopay.data.bob
 import com.example.tapgopay.data.charlie
 import com.example.tapgopay.data.diana
 import com.example.tapgopay.data.generateFakeWallet
+import com.example.tapgopay.data.toContact
 import com.example.tapgopay.remote.Contact
+import com.example.tapgopay.remote.TransactionResult
 import com.example.tapgopay.remote.Wallet
 import com.example.tapgopay.screens.widgets.ContactCardRow
 import com.example.tapgopay.screens.widgets.EnterPinNumber
+import com.example.tapgopay.screens.widgets.MessageBanner
+import com.example.tapgopay.screens.widgets.TransactionReceipt
 import com.example.tapgopay.ui.theme.TapGoPayTheme
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -80,331 +90,386 @@ fun PaymentScreen(
 ) {
     Scaffold(
         modifier = Modifier.fillMaxSize(),
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = {},
-                navigationIcon = {
-                    IconButton(onClick = goBack) {
-                        Icon(
-                            painter = painterResource(R.drawable.baseline_arrow_back_24),
-                            contentDescription = "Previous Page",
-                            modifier = Modifier.size(32.dp),
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(
-                        onClick = {
-                            navigateTo(Routes.ScanQRCodeScreen)
-                        }
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.qr_code_24dp),
-                            contentDescription = null,
-                            modifier = Modifier.size(32.dp),
-                        )
-                    }
-                },
-            )
-        }
     ) { innerPadding ->
         var displayContactsSheet by remember { mutableStateOf(false) }
-        val contactsSheet = rememberModalBottomSheetState()
+        val contactsSheet = rememberModalBottomSheetState(
+            skipPartiallyExpanded = true,
+        )
 
         val wallets: List<Wallet> = appViewModel.wallets.values.toList()
         var displayWalletsSheet by remember { mutableStateOf(false) }
-        val walletsSheet = rememberModalBottomSheetState()
-
-        var displayPinSheet by remember { mutableStateOf(false) }
-        val pinSheet = rememberModalBottomSheetState()
+        val walletsSheet = rememberModalBottomSheetState(
+            skipPartiallyExpanded = true,
+        )
+        var transactionResult by remember { mutableStateOf<TransactionResult?>(null) }
         val scope = rememberCoroutineScope()
+        var currentPage by remember { mutableStateOf(0) }
 
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(horizontal = 8.dp),
-            verticalArrangement = Arrangement.SpaceBetween,
+                .padding(horizontal = 12.dp)
         ) {
-            Text(
-                "Payment",
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Medium,
-            )
-
-            Card(
-                colors = CardDefaults.cardColors().copy(
-                    containerColor = MaterialTheme.colorScheme.onPrimary,
-                    contentColor = MaterialTheme.colorScheme.scrim,
-                ),
-                elevation = CardDefaults.cardElevation(
-                    defaultElevation = 12.dp,
-                ),
-                shape = RoundedCornerShape(12.dp),
-                modifier = Modifier.padding(horizontal = 12.dp),
-            ) {
-                val contact = remember {
-                    Contact(
-                        username = "Mary Jane",
-                        walletAddress = "123456789",
-                        phoneNo = "+254 120811682"
-                    )
-                }
-                val wallet = appViewModel.selectedWallet
-
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    modifier = Modifier.padding(12.dp),
-                ) {
-                    ContactCardRow(
-                        contact = contact,
-                        onClick = {
-                            displayContactsSheet = true
-                            scope.launch {
-                                contactsSheet.expand()
-                            }
-                        },
-                    )
-
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clip(RoundedCornerShape(8.dp))
-                            .clickable {
-                                displayWalletsSheet = true
-                                scope.launch {
-                                    walletsSheet.expand()
-                                }
-                            },
+            when (currentPage) {
+                0 -> {
+                    Column(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Row(
-                            horizontalArrangement = Arrangement.spacedBy(24.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
                         ) {
-                            Image(
-                                painter = painterResource(R.drawable.wallet_png),
-                                contentDescription = "Select Paying Wallet",
-                                modifier = Modifier.size(48.dp),
-                            )
-
-                            Column(
-                                verticalArrangement = Arrangement.Center,
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .padding(vertical = 12.dp),
-                            ) {
-                                Text(
-                                    wallet?.walletAddress ?: "Select Wallet",
-                                    style = MaterialTheme.typography.titleLarge,
+                            IconButton(onClick = goBack) {
+                                Icon(
+                                    painter = painterResource(R.drawable.baseline_arrow_back_24),
+                                    contentDescription = "Previous Page",
+                                    modifier = Modifier.size(32.dp),
                                 )
-                                wallet?.username?.let {
-                                    Text(
-                                        it,
-                                        style = MaterialTheme.typography.titleMedium,
+                            }
+                            IconButton(
+                                onClick = {
+                                    navigateTo(Routes.ScanQRCodeScreen)
+                                }
+                            ) {
+                                Icon(
+                                    painter = painterResource(R.drawable.qr_code_24dp),
+                                    contentDescription = null,
+                                    modifier = Modifier.size(32.dp),
+                                )
+                            }
+                        }
+                        Text(
+                            "Payment",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Medium,
+                        )
+
+                        Card(
+                            modifier = Modifier.padding(12.dp),
+                            colors = CardDefaults.cardColors().copy(
+                                containerColor = MaterialTheme.colorScheme.onPrimary,
+                                contentColor = MaterialTheme.colorScheme.scrim,
+                            ),
+                            elevation = CardDefaults.cardElevation(
+                                defaultElevation = 12.dp,
+                            ),
+                            shape = RoundedCornerShape(12.dp),
+                        ) {
+                            Column(
+                                verticalArrangement = Arrangement.spacedBy(8.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                modifier = Modifier.padding(12.dp),
+                            ) {
+                                val receiver = appViewModel.receiver
+
+                                if (receiver == null) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .background(color = MaterialTheme.colorScheme.surface)
+                                            .clickable {
+                                                displayContactsSheet = true
+                                                scope.launch {
+                                                    contactsSheet.expand()
+                                                }
+                                            },
+                                    ) {
+                                        Text(
+                                            "Select payment receiver",
+                                            style = MaterialTheme.typography.titleMedium,
+                                            modifier = Modifier.padding(16.dp),
+                                            textAlign = TextAlign.Center,
+                                            textDecoration = TextDecoration.Underline,
+                                        )
+                                    }
+                                } else {
+                                    ContactCardRow(
+                                        contact = receiver.toContact(),
+                                        onClick = {
+                                            displayContactsSheet = true
+                                            scope.launch {
+                                                contactsSheet.expand()
+                                            }
+                                        },
+                                    )
+                                }
+
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .clickable {
+                                            displayWalletsSheet = true
+                                            scope.launch {
+                                                walletsSheet.expand()
+                                            }
+                                        },
+                                ) {
+                                    Row(
+                                        horizontalArrangement = Arrangement.spacedBy(24.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp),
+                                    ) {
+                                        Image(
+                                            painter = painterResource(R.drawable.wallet_png),
+                                            contentDescription = "Select Paying Wallet",
+                                            modifier = Modifier.size(48.dp),
+                                        )
+
+                                        val sender = appViewModel.sender
+
+                                        Column(
+                                            verticalArrangement = Arrangement.Center,
+                                            modifier = Modifier
+                                                .weight(1f)
+                                                .padding(vertical = 12.dp),
+                                        ) {
+                                            Text(
+                                                sender?.walletAddress ?: "Select Wallet",
+                                                style = MaterialTheme.typography.titleMedium.copy(
+                                                    fontWeight = FontWeight.Medium,
+                                                ),
+                                            )
+                                            sender?.username?.let {
+                                                Text(
+                                                    it,
+                                                    style = MaterialTheme.typography.titleMedium,
+                                                )
+                                            }
+                                        }
+
+                                        Icon(
+                                            painter = painterResource(R.drawable.arrow_forward_24dp),
+                                            contentDescription = null,
+                                            modifier = Modifier.size(24.dp),
+                                        )
+                                    }
+                                }
+
+                                Column {
+                                    TextField(
+                                        value = appViewModel.amount,
+                                        onValueChange = {
+                                            appViewModel.amount = it
+                                        },
+                                        modifier = Modifier
+                                            .height(124.dp),
+                                        colors = TextFieldDefaults.colors(
+                                            focusedContainerColor = Color.Transparent,
+                                            unfocusedContainerColor = Color.Transparent,
+                                            focusedIndicatorColor = Color.Transparent,
+                                            unfocusedIndicatorColor = Color.Transparent,
+                                            disabledIndicatorColor = Color.Transparent,
+                                            errorIndicatorColor = Color.Transparent
+                                        ),
+                                        singleLine = true,
+                                        textStyle = TextStyle(
+                                            fontSize = 72.sp,
+                                            textAlign = TextAlign.Center,
+                                            fontWeight = FontWeight.Medium,
+                                        ),
+                                        keyboardOptions = KeyboardOptions(
+                                            keyboardType = KeyboardType.Number,
+                                        )
+                                    )
+
+                                    var reason by remember { mutableStateOf("") }
+
+                                    TextField(
+                                        value = reason,
+                                        onValueChange = {
+                                            reason = it
+                                        },
+                                        modifier = Modifier
+                                            .padding(8.dp),
+                                        label = {
+                                            Text(
+                                                "Reason?",
+                                                modifier = Modifier.fillMaxWidth(),
+                                                style = MaterialTheme.typography.titleMedium,
+                                            )
+                                        },
+                                        colors = TextFieldDefaults.colors(
+                                            focusedContainerColor = Color.Transparent,
+                                            unfocusedContainerColor = Color.Transparent,
+                                            focusedIndicatorColor = Color.Transparent,
+                                            unfocusedIndicatorColor = Color.Transparent,
+                                            disabledIndicatorColor = Color.Transparent,
+                                            errorIndicatorColor = Color.Transparent
+                                        ),
+                                        textStyle = MaterialTheme.typography.titleMedium,
                                     )
                                 }
                             }
-
-                            Icon(
-                                painter = painterResource(R.drawable.arrow_forward_24dp),
-                                contentDescription = null,
-                                modifier = Modifier.size(24.dp),
-                            )
                         }
-                    }
 
-                    Column {
-                        val amount = appViewModel.amount
-
-                        TextField(
-                            value = "$amount",
-                            onValueChange = {
-                                appViewModel.setAmount(it)
+                        ElevatedButton(
+                            onClick = {
+                                val isReadyToSend = appViewModel.isReadyToSend()
+                                if (isReadyToSend) {
+                                    currentPage++
+                                }
                             },
                             modifier = Modifier
-                                .height(164.dp),
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = Color.Transparent,
-                                unfocusedContainerColor = Color.Transparent,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent,
-                                disabledIndicatorColor = Color.Transparent,
-                                errorIndicatorColor = Color.Transparent
+                                .fillMaxWidth()
+                                .padding(vertical = 24.dp, horizontal = 16.dp),
+                            colors = ButtonDefaults.buttonColors().copy(
+                                containerColor = MaterialTheme.colorScheme.primary,
+                                contentColor = MaterialTheme.colorScheme.onPrimary,
                             ),
-                            singleLine = true,
-                            textStyle = TextStyle(
-                                fontSize = 124.sp,
-                                textAlign = TextAlign.Center,
-                                fontWeight = FontWeight.Medium,
-                            ),
-                            keyboardOptions = KeyboardOptions(
-                                keyboardType = KeyboardType.Number,
+                            shape = RoundedCornerShape(12.dp),
+                        ) {
+                            Text(
+                                text = "Next",
+                                modifier = Modifier.padding(vertical = 12.dp),
+                                style = MaterialTheme.typography.titleLarge,
                             )
-                        )
-
-                        var reason by remember { mutableStateOf("") }
-
-                        TextField(
-                            value = reason,
-                            onValueChange = {
-                                reason = it
-                            },
-                            modifier = Modifier
-                                .padding(8.dp),
-                            label = {
-                                Text(
-                                    "Reason?",
-                                    modifier = Modifier.fillMaxWidth(),
-                                    style = MaterialTheme.typography.titleLarge,
-                                    textAlign = TextAlign.Center,
-                                )
-                            },
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = Color.Transparent,
-                                unfocusedContainerColor = Color.Transparent,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent,
-                                disabledIndicatorColor = Color.Transparent,
-                                errorIndicatorColor = Color.Transparent
-                            ),
-                            textStyle = MaterialTheme.typography.headlineMedium.copy(
-                                textAlign = TextAlign.Center,
-                            ),
-                        )
-                    }
-                }
-            }
-
-            ElevatedButton(
-                onClick = {
-                    displayPinSheet = true
-                    scope.launch {
-                        pinSheet.expand()
-                    }
-                },
-                enabled = appViewModel.selectedWallet != null,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 24.dp, horizontal = 16.dp),
-                colors = ButtonDefaults.buttonColors().copy(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                ),
-                shape = RoundedCornerShape(12.dp),
-            ) {
-                Text(
-                    text = "Send",
-                    modifier = Modifier.padding(vertical = 12.dp),
-                    style = MaterialTheme.typography.titleLarge,
-                )
-            }
-
-            // Modal Bottom Sheets
-            val context = LocalContext.current
-
-            val launcher = rememberLauncherForActivityResult(
-                ActivityResultContracts.RequestPermission()
-            ) { isGranted: Boolean ->
-                if (isGranted) {
-                    appViewModel.getContacts(context)
-                } else {
-                    // Permission denied
-                    Toast.makeText(
-                        context,
-                        "Read contacts permission is required for this feature to be available",
-                        Toast.LENGTH_LONG
-
-                    ).show()
-                }
-            }
-
-            if (displayContactsSheet) {
-                ModalBottomSheet(
-                    onDismissRequest = {
-                        displayContactsSheet = false
-                        scope.launch {
-                            contactsSheet.hide()
                         }
-                    }
-                ) {
-                    SelectContacts(
-                        contacts = appViewModel.contacts,
-                        onSelectContact = {},
-                        onRefreshContacts = {
-                            // Check permission to read contacts
-                            val permission = ContextCompat.checkSelfPermission(
-                                context, Manifest.permission.READ_CONTACTS,
-                            )
 
-                            when (permission) {
-                                PackageManager.PERMISSION_GRANTED -> {
-                                    appViewModel.getContacts(context)
-                                }
+                        // Modal Bottom Sheets
+                        val context = LocalContext.current
 
-                                else -> {
-                                    // Asking for permission
-                                    launcher.launch(Manifest.permission.READ_CONTACTS)
-                                }
+                        val launcher = rememberLauncherForActivityResult(
+                            ActivityResultContracts.RequestPermission()
+                        ) { isGranted: Boolean ->
+                            if (isGranted) {
+                                appViewModel.getContacts(context)
+                            } else {
+                                // Permission denied
+                                Toast.makeText(
+                                    context,
+                                    "Read contacts permission is required for this feature to be available",
+                                    Toast.LENGTH_LONG
+
+                                ).show()
                             }
+                        }
 
+                        if (displayContactsSheet) {
+                            ModalBottomSheet(
+                                onDismissRequest = {
+                                    displayContactsSheet = false
+                                    scope.launch {
+                                        contactsSheet.hide()
+                                    }
+                                }
+                            ) {
+                                SelectReceiver(
+                                    contacts = appViewModel.contacts,
+                                    onSelectReceiver = {
+                                        appViewModel.setReceiver(it)
+                                    },
+                                    onRefreshContacts = {
+                                        // Check permission to read contacts
+                                        val permission = ContextCompat.checkSelfPermission(
+                                            context, Manifest.permission.READ_CONTACTS,
+                                        )
+
+                                        when (permission) {
+                                            PackageManager.PERMISSION_GRANTED -> {
+                                                appViewModel.getContacts(context)
+                                            }
+
+                                            else -> {
+                                                // Asking for permission
+                                                launcher.launch(Manifest.permission.READ_CONTACTS)
+                                            }
+                                        }
+
+                                    },
+                                )
+                            }
+                        }
+
+                        if (displayWalletsSheet) {
+                            ModalBottomSheet(
+                                onDismissRequest = {
+                                    displayWalletsSheet = false
+                                    scope.launch {
+                                        walletsSheet.hide()
+                                    }
+                                }
+                            ) {
+                                SelectWallet(
+                                    wallets = wallets,
+                                    onSelectWallet = {
+                                        appViewModel.sender = it
+                                    }
+                                )
+                            }
+                        }
+                    }
+                }
+
+                1 -> {
+                    val scope = rememberCoroutineScope()
+                    val sender = appViewModel.sender
+
+                    if (sender == null) {
+                        currentPage--
+                        return@Box
+                    }
+
+                    EnterPinNumber(
+                        title = "Enter your PIN to confirm payment",
+                        onPinEntered = {
+                            appViewModel.pin = it
+                            scope.launch {
+                                transactionResult = appViewModel.transferFunds(sender)
+                                currentPage++
+                            }
+                        },
+                        onCancel = {
+                            currentPage--
                         },
                     )
                 }
 
-                if (displayWalletsSheet) {
-                    ModalBottomSheet(
-                        onDismissRequest = {
-                            displayWalletsSheet = false
-                            scope.launch {
-                                walletsSheet.hide()
-                            }
+                2 -> {
+                    val result = transactionResult
+
+                    if (result == null) {
+                        currentPage--
+                        return@Box
+                    }
+
+                    TransactionReceipt(
+                        transaction = result,
+                        goBack = {
+                            currentPage--
+                        },
+                        done = {
+                            navigateTo(Routes.HomeScreen)
                         }
-                    ) {
-                        SelectWallet(
-                            wallets = wallets,
-                            onSelectWallet = {
-                                appViewModel.selectedWallet = it
-                            }
-                        )
+                    )
+                }
+            }
+
+            // Message Banner
+            var error by remember { mutableStateOf<UIMessage?>(null) }
+
+            LaunchedEffect(Unit) {
+                appViewModel.uiMessages.collectLatest { uiMessage ->
+                    error = uiMessage
+                    launch {
+                        delay(5000)  // Hide after n seconds
+                        error = null
                     }
                 }
+            }
 
-                if (displayPinSheet) {
-                    ModalBottomSheet(
-                        onDismissRequest = {
-                            displayPinSheet = false
-                            scope.launch {
-                                pinSheet.hide()
-                            }
-                        }
-                    ) {
-                        EnterPinNumber(
-                            title = "Enter your pin to confirm payment",
-                            goBack = {
-                                displayPinSheet = false
-                                scope.launch {
-                                    pinSheet.hide()
-                                }
-                            },
-                            onContinue = {
-                                appViewModel.pin = it
-                                val sender = appViewModel.selectedWallet
-
-                                sender?.let {
-                                    scope.launch {
-                                        appViewModel.transferFunds(it)
-                                    }
-                                }
-                            },
-                            forgotPin = {},
-                        )
-                    }
+            error?.let {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.TopCenter,
+                ) {
+                    MessageBanner(it)
                 }
-
             }
         }
     }
@@ -418,7 +483,7 @@ fun SelectWallet(
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(4.dp),
         modifier = Modifier
-            .fillMaxWidth()
+            .fillMaxSize()
             .padding(16.dp),
     ) {
         if (wallets.isEmpty()) {
@@ -493,18 +558,44 @@ fun SelectWallet(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SelectContacts(
+fun SelectReceiver(
     contacts: List<Contact>,
     selectedContact: Contact? = null,
-    onSelectContact: (Contact) -> Unit,
+    onSelectReceiver: (Recipient) -> Unit,
     onRefreshContacts: () -> Unit,
 ) {
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(12.dp),
         modifier = Modifier
-            .fillMaxWidth()
+            .fillMaxSize()
             .padding(16.dp),
     ) {
+        item {
+            Column {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 12.dp),
+                    horizontalArrangement = Arrangement.End,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        "Refresh Contacts",
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    IconButton(
+                        onClick = onRefreshContacts,
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.refresh_24dp),
+                            contentDescription = "Refresh Contacts",
+                            modifier = Modifier.size(32.dp),
+                        )
+                    }
+                }
+            }
+        }
+
         if (contacts.isEmpty()) {
             item {
                 Column(
@@ -527,37 +618,13 @@ fun SelectContacts(
             }
         } else {
             item {
-                Column {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 12.dp),
-                        horizontalArrangement = Arrangement.End,
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            "Refresh Contacts",
-                            style = MaterialTheme.typography.titleMedium,
-                        )
-                        IconButton(
-                            onClick = onRefreshContacts,
-                        ) {
-                            Icon(
-                                painter = painterResource(R.drawable.refresh_24dp),
-                                contentDescription = "Refresh Contacts",
-                                modifier = Modifier.size(32.dp),
-                            )
-                        }
-                    }
-
-                    Text(
-                        "Select payment recipient",
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Medium,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 24.dp),
-                    )
-                }
+                Text(
+                    "Select payment recipient",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Medium,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 24.dp),
+                )
             }
         }
 
@@ -566,7 +633,9 @@ fun SelectContacts(
                 contact = contact,
                 isSelected = selectedContact?.username == contact.username,
                 onClick = {
-                    onSelectContact(contact)
+                    onSelectReceiver(
+                        Recipient.PhoneNumber(contact.phoneNo)
+                    )
                 }
             )
         }
@@ -575,13 +644,13 @@ fun SelectContacts(
 
 @Preview(showBackground = true)
 @Composable
-fun PreviewSelectContacts() {
+fun PreviewSelectReceiver() {
     TapGoPayTheme {
-        SelectContacts(
+        SelectReceiver(
             contacts = listOf(
                 alice, bob, charlie, diana
             ),
-            onSelectContact = {},
+            onSelectReceiver = {},
             onRefreshContacts = {},
         )
     }
@@ -589,11 +658,11 @@ fun PreviewSelectContacts() {
 
 @Preview(showBackground = true)
 @Composable
-fun PreviewEmptySelectContacts() {
+fun PreviewEmptySelectReceiver() {
     TapGoPayTheme {
-        SelectContacts(
+        SelectReceiver(
             contacts = emptyList(),
-            onSelectContact = {},
+            onSelectReceiver = {},
             onRefreshContacts = {},
         )
     }

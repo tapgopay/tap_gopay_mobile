@@ -1,5 +1,7 @@
 package com.example.tapgopay.utils
 
+import android.util.Log
+import com.example.tapgopay.MainActivity
 import com.example.tapgopay.remote.MessageResponse
 import com.google.gson.Gson
 import retrofit2.Response
@@ -37,28 +39,45 @@ fun formatAmount(amountStr: String): String {
     return String.format(Locale.getDefault(), "%.2f", amount)
 }
 
-fun formatDatetime(dateTime: LocalDateTime): String {
-    val now = LocalDateTime.now()
+fun formatDatetime(text: String): String {
+    try {
+        val dateTime = LocalDateTime.parse(text)
+        return formatDatetime(dateTime)
 
-    // If the date is in the future
-    if (dateTime.isAfter(now)) return "In the future"
-
-    val days = ChronoUnit.DAYS.between(dateTime, now).toInt()
-    val months = ChronoUnit.MONTHS.between(dateTime, now).toInt()
-    val years = ChronoUnit.YEARS.between(dateTime, now).toInt()
-
-    val daysPast = when {
-        days == 0 -> "Today"
-        days < 30 -> "$days days ago"
-        months < 12 -> "$months months ago"
-        years == 1 -> "Last year"
-        years in 2..10 -> "$years years ago"
-        else -> "A long time ago"
+    } catch (e: Exception) {
+        Log.e(MainActivity.TAG, "Error formatting datetime; ${e.message}")
+        return ""
     }
+}
 
-    val formatter = DateTimeFormatter.ofPattern("HH:mm")
-    val formatted = dateTime.format(formatter)
-    return "$daysPast $formatted"
+fun formatDatetime(dateTime: LocalDateTime): String {
+    try {
+        val now = LocalDateTime.now()
+
+        // If the date is in the future
+        if (dateTime.isAfter(now)) return "In the future"
+
+        val days = ChronoUnit.DAYS.between(dateTime, now).toInt()
+        val months = ChronoUnit.MONTHS.between(dateTime, now).toInt()
+        val years = ChronoUnit.YEARS.between(dateTime, now).toInt()
+
+        val daysPast = when {
+            days == 0 -> "Today"
+            days < 30 -> "$days days ago"
+            months < 12 -> "$months months ago"
+            years == 1 -> "Last year"
+            years in 2..10 -> "$years years ago"
+            else -> "A long time ago"
+        }
+
+        val formatter = DateTimeFormatter.ofPattern("HH:mm")
+        val formatted = dateTime.format(formatter)
+        return "$daysPast $formatted"
+
+    } catch (e: Exception) {
+        Log.e(MainActivity.TAG, "Error formatting datetime; ${e.message}")
+        return ""
+    }
 }
 
 fun String.ifEmptyTryDefaults(vararg values: String): String {

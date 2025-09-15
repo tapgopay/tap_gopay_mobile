@@ -1,11 +1,11 @@
 package com.example.tapgopay.screens
 
 import android.app.Application
+import android.widget.Toast
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -44,6 +44,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -155,18 +156,22 @@ fun HomeScreen(
                         modifier = Modifier.fillMaxWidth(),
                     ) {
                         itemsIndexed(wallets) { _, wallet ->
-                            WalletView(
-                                wallet = wallet,
-                                onTransferFunds = {
-                                    appViewModel.selectedWallet = wallet
-                                    navigateTo(Routes.PaymentScreen)
-                                },
-                                onToggleFreeze = {
-                                    scope.launch {
-                                        appViewModel.toggleFreeze(wallet)
-                                    }
-                                },
-                            )
+                            Box(
+                                modifier = Modifier.fillParentMaxWidth(),
+                            ) {
+                                Wallet(
+                                    wallet = wallet,
+                                    onTransferFunds = {
+                                        appViewModel.sender = wallet
+                                        navigateTo(Routes.PaymentScreen)
+                                    },
+                                    onToggleFreeze = {
+                                        scope.launch {
+                                            appViewModel.toggleFreeze(wallet)
+                                        }
+                                    },
+                                )
+                            }
                         }
                     }
                 }
@@ -261,19 +266,17 @@ fun ActionButton(
 
 
 @Composable
-fun WalletView(
+fun Wallet(
     wallet: Wallet,
     onTransferFunds: () -> Unit,
     onSetLimits: () -> Unit = {},
     onViewWalletDetails: () -> Unit = {},
     onToggleFreeze: () -> Unit = {},
-    color: Color = successColor,
+    color: Color = if (wallet.isActive) successColor else Color.Gray,
     displayBalance: Boolean = true,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable {},
+        modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Card(
@@ -305,7 +308,7 @@ fun WalletView(
                         Box(
                             modifier = Modifier
                                 .size(12.dp)
-                                .background(successColor, shape = CircleShape)
+                                .background(color, shape = CircleShape)
                         )
 
                         Text(
@@ -353,9 +356,6 @@ fun WalletView(
                             fontWeight = FontWeight.Medium
                         ),
                     )
-
-                    //
-
                 }
 
                 Box(
@@ -441,8 +441,17 @@ fun WalletView(
                 iconId = R.drawable.wallet2_24dp,
             )
 
+            val context = LocalContext.current
+
             ActionButton(
-                onClick = onTransferFunds,
+                onClick = {
+                    if (!wallet.isActive) {
+                        Toast.makeText(context, "Wallet is not active", Toast.LENGTH_LONG)
+                            .show()
+                        return@ActionButton
+                    }
+                    onTransferFunds()
+                },
                 text = "Transfer",
                 iconId = R.drawable.arrow_upward_24dp,
             )

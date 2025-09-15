@@ -123,7 +123,7 @@ fun ContactCardRow(
             Column {
                 Text(
                     contact.username,
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Medium,
                     color = contentColor,
                 )
