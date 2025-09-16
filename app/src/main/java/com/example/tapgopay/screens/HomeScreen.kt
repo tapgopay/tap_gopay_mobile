@@ -97,6 +97,7 @@ fun HomeScreen(
                 },
                 actions = {
                     Menu(
+                        appViewModel = appViewModel,
                         navigateTo = navigateTo
                     )
                 }
@@ -108,6 +109,10 @@ fun HomeScreen(
         val scope = rememberCoroutineScope()
 
         val wallets: List<Wallet> = appViewModel.wallets.values.toList()
+
+        LaunchedEffect(Unit) {
+            appViewModel.getAllWallets()
+        }
 
         Box(
             modifier = Modifier

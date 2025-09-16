@@ -1,6 +1,5 @@
 package com.example.tapgopay.screens
 
-import android.content.Context
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -31,12 +30,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.tapgopay.MainActivity
 import com.example.tapgopay.R
 import com.example.tapgopay.ui.theme.TapGoPayTheme
 import java.time.LocalDateTime
@@ -128,16 +125,6 @@ fun ProfileScreen(
                         }
                     }
 
-                    val context = LocalContext.current
-                    val sharedPreferences = remember {
-                        context.getSharedPreferences(
-                            MainActivity.SHARED_PREFERENCES,
-                            Context.MODE_PRIVATE
-                        )
-                    }
-                    val username = remember {
-                        sharedPreferences.getString(MainActivity.USERNAME, "there") ?: "there"
-                    }
                     val lastLogin = remember {
                         val currentTime = LocalDateTime.now()
                         val formatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)
@@ -146,7 +133,7 @@ fun ProfileScreen(
 
                     Column {
                         Text(
-                            "Hello $username",
+                            "Hello there",
                             style = MaterialTheme.typography.titleLarge,
                             color = MaterialTheme.colorScheme.onPrimary,
                         )

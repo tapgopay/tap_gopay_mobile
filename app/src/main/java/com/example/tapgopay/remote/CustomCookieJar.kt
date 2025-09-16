@@ -8,10 +8,12 @@ import okhttp3.Cookie
 import okhttp3.CookieJar
 import okhttp3.HttpUrl
 
-class CustomCookieJar() : CookieJar {
-    private val context: Context = MainActivity.instance.applicationContext
+class CustomCookieJar(private val userId: String, private val context: Context) : CookieJar {
     private val sharedPreferences: SharedPreferences =
-        context.getSharedPreferences(MainActivity.SHARED_PREFERENCES, Context.MODE_PRIVATE)
+        context.getSharedPreferences(
+            "${MainActivity.SHARED_PREFERENCES}_${userId}",
+            Context.MODE_PRIVATE
+        )
 
     override fun loadForRequest(url: HttpUrl): List<Cookie> {
         val cookiesSet: Set<String>? = sharedPreferences.getStringSet(url.host, emptySet())

@@ -1,19 +1,23 @@
 package com.example.tapgopay.remote
 
 import com.google.gson.annotations.SerializedName
-import okhttp3.MultipartBody
-import okhttp3.RequestBody
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
-import retrofit2.http.Multipart
 import retrofit2.http.POST
-import retrofit2.http.Part
 
+data class RegisterRequest(
+    val username: String,
+    val email: String,
+    val password: String,
+    @SerializedName("phone_no") val phone: String,
+    @SerializedName("public_key") val publicKey: String,
+)
 
 data class LoginRequest(
     val email: String,
-    val signature: String,
+    val password: String,
+    @SerializedName("public_key") val publicKey: String,
 )
 
 data class MessageResponse(
@@ -34,14 +38,8 @@ interface AuthService {
     @POST("/auth/login")
     suspend fun loginUser(@Body loginRequest: LoginRequest): Response<MessageResponse>
 
-    @Multipart
     @POST("/auth/register")
-    suspend fun registerUser(
-        @Part file: MultipartBody.Part,
-        @Part("username") username: RequestBody,
-        @Part("email") email: RequestBody,
-        @Part("phone_no") phoneNo: RequestBody,
-    ): Response<MessageResponse>
+    suspend fun registerUser(@Body registerRequest: RegisterRequest): Response<MessageResponse>
 
     @GET("/auth/verify-login")
     suspend fun verifyLogin(): Response<MessageResponse>

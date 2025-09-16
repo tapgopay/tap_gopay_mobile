@@ -26,10 +26,12 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.example.tapgopay.R
+import com.example.tapgopay.data.AppViewModel
 import com.example.tapgopay.screens.Routes
 
 @Composable
 fun Menu(
+    appViewModel: AppViewModel,
     navigateTo: (route: Routes) -> Unit,
 ) {
     var expanded by remember { mutableStateOf(false) }
@@ -104,8 +106,9 @@ fun Menu(
                 text = "Logout",
                 onClick = {
                     expanded = false
-                    Toast.makeText(context, "Not Yet Implemented", Toast.LENGTH_LONG)
-                        .show()
+
+                    appViewModel.clearCookies()
+                    navigateTo(Routes.LoginScreen)
                 },
                 leadingIconId = R.drawable.logout_24dp
             )

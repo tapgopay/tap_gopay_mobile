@@ -111,9 +111,9 @@ fun SignUpScreen(
 
                     InputField(
                         label = "Phone Number",
-                        value = authViewModel.phoneNumber,
+                        value = authViewModel.phone,
                         onValueChange = { value ->
-                            authViewModel.phoneNumber = value
+                            authViewModel.phone = value
                         },
                         keyboardType = KeyboardType.Phone,
                         leadingIconId = R.drawable.call_24dp,

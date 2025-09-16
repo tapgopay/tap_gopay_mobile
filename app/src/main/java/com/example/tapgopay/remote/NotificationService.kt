@@ -100,7 +100,7 @@ class NotificationService : Service() {
         val sendersWalletAddress = t.sender.walletAddress.ifEmpty { "???" }
         val sendersPhoneNo = t.sender.phoneNo.ifEmpty { "+254 7xx xxx xxx " }
         val message =
-            "Confirmed. ${t.transactionId} You have received KSH ${formatAmount(t.amount)} from $sendersWalletAddress, phoneNumber $sendersPhoneNo. ${
+            "Confirmed. ${t.transactionId} You have received KSH ${formatAmount(t.amount)} from $sendersWalletAddress, phone $sendersPhoneNo. ${
                 formatDatetime(t.timestamp)
             }"
 

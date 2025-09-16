@@ -39,10 +39,9 @@ class MainActivity : ComponentActivity() {
     companion object {
         const val TAG: String = "TapGoPay"
         const val SHARED_PREFERENCES: String = "SHARED_PREFERENCES"
-        const val USERNAME: String = "USERNAME"
+        const val EMAIL: String = "EMAIL"
         const val PRIVATE_KEY_FILENAME: String = "PRIVATE_KEY_FILENAME"
-
-        lateinit var instance: MainActivity
+        const val PUBLIC_KEY_FILENAME: String = "PUBLIC_KEY_FILENAME"
     }
 
     private var qrCodeContents: Map<String, String>? = null
@@ -68,7 +67,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        instance = this
 
         val intent = Intent(this, NotificationService::class.java)
         ContextCompat.startForegroundService(this, intent)
@@ -104,7 +102,7 @@ class MainActivity : ComponentActivity() {
                             startDestination = Routes.ForgotPasswordScreen.name,
                             route = "Welcome Home"
                         ) {
-                            val appViewModel = AppViewModel(instance.application)
+                            val appViewModel = AppViewModel(this@MainActivity.application)
 
                             composable(route = Routes.HomeScreen.name) {
                                 HomeScreen(
@@ -169,7 +167,7 @@ class MainActivity : ComponentActivity() {
                             startDestination = Routes.ForgotPasswordScreen.name,
                             route = "Forgot_Password"
                         ) {
-                            val authViewModel = AuthViewModel(instance.application)
+                            val authViewModel = AuthViewModel(this@MainActivity.application)
 
                             composable(route = Routes.ForgotPasswordScreen.name) {
                                 ForgotPasswordScreen(
