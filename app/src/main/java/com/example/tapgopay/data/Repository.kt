@@ -70,7 +70,7 @@ fun generateFakeWallet(id: Int): Wallet {
         walletAddress = walletAddress,
         initialDeposit = initialDeposit,
         isActive = isActive,
-        timestamp = timestamp,
+        createdAt = timestamp,
         balance = balance
     )
 }

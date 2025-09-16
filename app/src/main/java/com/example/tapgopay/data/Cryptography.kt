@@ -15,6 +15,7 @@ import java.security.SecureRandom
 import java.security.Signature
 import java.security.spec.ECGenParameterSpec
 import java.security.spec.PKCS8EncodedKeySpec
+import java.security.spec.X509EncodedKeySpec
 import java.util.Base64
 import javax.crypto.Cipher
 import javax.crypto.spec.GCMParameterSpec
@@ -110,9 +111,12 @@ fun PublicKey.pemEncode(): ByteArray {
     return "-----BEGIN EC PUBLIC KEY-----\n$base64\n-----END EC PUBLIC KEY-----".toByteArray()
 }
 
-fun loadAndDecryptPrivateKey(password: String, file: File): PrivateKey? {
+/**
+ * Loads encrypted private key from file.
+ */
+private fun loadEncryptedPrivateKey(privKeyFile: File, password: String): PrivateKey? {
     try {
-        val data = file.readBytes()
+        val data = privKeyFile.readBytes()
         val salt = data.copyOfRange(0, 16)
         val iv = data.copyOfRange(16, 28)
         val ciphertext = data.copyOfRange(28, data.size)
@@ -137,9 +141,42 @@ fun loadAndDecryptPrivateKey(password: String, file: File): PrivateKey? {
     }
 }
 
+private fun loadPublicKey(pubKeyFile: File): PublicKey? {
+    try {
+        val pem = pubKeyFile.readText()
+
+        // Remove header and footer
+        val sanitized = pem
+            .replace("-----BEGIN EC PUBLIC KEY-----", "")
+            .replace("-----END EC PUBLIC KEY-----", "")
+            .replace("\\s".toRegex(), "") // remove all whitespace/newlines
+
+        val decoded = Base64.getDecoder().decode(sanitized)
+        val keySpec = X509EncodedKeySpec(decoded)
+        val keyFactory = KeyFactory.getInstance("EC") // or "ECDSA"
+        return keyFactory.generatePublic(keySpec)
+
+    } catch (e: Exception) {
+        Log.e(MainActivity.TAG, "Error loading public key; ${e.message}")
+        return null
+    }
+}
+
+fun loadUsersKeyPair(password: String, privKeyFile: File, pubKeyFile: File): KeyPair? {
+    try {
+        val privateKey: PrivateKey = loadEncryptedPrivateKey(privKeyFile, password) ?: return null
+        val publicKey: PublicKey = loadPublicKey(pubKeyFile) ?: return null
+        return KeyPair(publicKey, privateKey)
+
+    } catch (e: Exception) {
+        Log.e(MainActivity.TAG, "Error loading private key; ${e.message}")
+        return null
+    }
+}
+
 fun sha256Hash(data: ByteArray): ByteArray? {
     try {
-        val messageDigest = MessageDigest.getInstance("SHA256")
+        val messageDigest = MessageDigest.getInstance("SHA-256")
         messageDigest.update(data)
         return messageDigest.digest()
 
@@ -151,7 +188,7 @@ fun sha256Hash(data: ByteArray): ByteArray? {
 
 fun signData(data: ByteArray, privateKey: PrivateKey): ByteArray? {
     try {
-        val signature = Signature.getInstance("SHA256withECDSA")
+        val signature = Signature.getInstance("NONEwithECDSA")
         signature.initSign(privateKey)
         signature.update(data)
         return signature.sign()

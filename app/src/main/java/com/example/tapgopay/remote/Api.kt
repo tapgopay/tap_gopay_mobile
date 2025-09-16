@@ -1,5 +1,6 @@
 package com.example.tapgopay.remote
 
+import android.content.Context
 import com.example.tapgopay.BuildConfig
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonDeserializationContext
@@ -26,15 +27,17 @@ class AuthInterceptor : Interceptor {
     }
 }
 
-object Api {
-    private val client =
+fun getRetrofit(userId: String, context: Context): Retrofit {
+    val cookieJar = CustomCookieJar(userId, context)
+
+    val client =
         OkHttpClient.Builder()
             .addInterceptor(AuthInterceptor())
-            .cookieJar(CustomCookieJar())
+            .cookieJar(cookieJar)
             .callTimeout(Duration.ofSeconds(30))
             .build()
 
-    private val gson = GsonBuilder()
+    val gson = GsonBuilder()
         .registerTypeAdapter(
             LocalDateTime::class.java,
             object : JsonDeserializer<LocalDateTime> {
@@ -51,21 +54,23 @@ object Api {
             }
         ).create()
 
-    private val retrofitBuilder by lazy {
-        Retrofit.Builder()
-            .addConverterFactory(GsonConverterFactory.create(gson))
-            .baseUrl(BuildConfig.REMOTE_URL)
-            .client(client)
-            .build()
+    val retrofit = Retrofit.Builder()
+        .addConverterFactory(GsonConverterFactory.create(gson))
+        .baseUrl(BuildConfig.REMOTE_URL)
+        .client(client)
+        .build()
+
+    return retrofit
+}
+
+object Api {
+    fun getAuthApi(userId: String, context: Context): AuthService {
+        val retrofit = getRetrofit(userId, context)
+        return retrofit.create(AuthService::class.java)
     }
 
-    val authService: AuthService by lazy {
-        retrofitBuilder
-            .create(AuthService::class.java)
-    }
-
-    val walletService: WalletService by lazy {
-        retrofitBuilder
-            .create(WalletService::class.java)
+    fun getWalletApi(userId: String, context: Context): WalletService {
+        val retrofit = getRetrofit(userId, context)
+        return retrofit.create(WalletService::class.java)
     }
 }

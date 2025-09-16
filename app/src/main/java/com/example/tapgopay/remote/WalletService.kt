@@ -1,6 +1,7 @@
 package com.example.tapgopay.remote
 
 import com.example.tapgopay.data.alice
+import com.example.tapgopay.data.sha256Hash
 import com.google.gson.annotations.SerializedName
 import retrofit2.Response
 import retrofit2.http.Body
@@ -8,7 +9,7 @@ import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
 import java.time.LocalDateTime
-
+import java.util.Locale
 
 data class Wallet(
     @SerializedName("user_id") val userId: Int,
@@ -17,7 +18,7 @@ data class Wallet(
     @SerializedName("wallet_address") val walletAddress: String,
     @SerializedName("initial_deposit") val initialDeposit: Double,
     @SerializedName("is_active") var isActive: Boolean,
-    @SerializedName("timestamp") val timestamp: LocalDateTime,
+    @SerializedName("created_at") val createdAt: LocalDateTime,
     val balance: Double,
 )
 
@@ -32,8 +33,14 @@ data class TransactionRequest(
     val receiver: String,
     val amount: Double,
     @SerializedName("timestamp") val timestamp: String = LocalDateTime.now().toString(),
-    var signature: String, // Base64-encoded string
+    var signature: String = "", // Base64-encoded string
+    @SerializedName("public_key_hash") var pubKeyHash: String = "", // Base64-encoded string
 )
+
+fun TransactionRequest.hashedPayload(): ByteArray? {
+    val payload = String.format(Locale.US, "%s|%s|%.2f|%s", sender, receiver, amount, timestamp)
+    return sha256Hash(payload.toByteArray())
+}
 
 fun TransactionRequest.asResult(): TransactionResult {
     return TransactionResult(

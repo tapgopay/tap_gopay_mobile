@@ -9,23 +9,21 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.content.edit
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.application
 import com.example.tapgopay.MainActivity
 import com.example.tapgopay.remote.Api
 import com.example.tapgopay.remote.EmailRequest
 import com.example.tapgopay.remote.LoginRequest
 import com.example.tapgopay.remote.PasswordResetRequest
+import com.example.tapgopay.remote.RegisterRequest
 import com.example.tapgopay.utils.extractErrorMessage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.withContext
-import okhttp3.MediaType.Companion.toMediaTypeOrNull
-import okhttp3.MultipartBody
-import okhttp3.RequestBody.Companion.toRequestBody
 import java.io.File
 import java.io.IOException
 import java.security.KeyPair
-import java.security.PrivateKey
 
 sealed class UIMessage {
     abstract val message: String
@@ -39,7 +37,7 @@ open class AuthViewModel(application: Application) : AndroidViewModel(applicatio
     var username by mutableStateOf("")
     var email by mutableStateOf("")
     var pin by mutableStateOf("")
-    var phoneNumber by mutableStateOf("")
+    var phone by mutableStateOf("")
     var agreedToTerms by mutableStateOf(false)
     var otp by mutableStateOf("")
 
@@ -63,7 +61,7 @@ open class AuthViewModel(application: Application) : AndroidViewModel(applicatio
             }
 
             else -> {
-                Log.e(MainActivity.TAG, "$message ${e.message}")
+                Log.e(MainActivity.TAG, "$message $e")
                 _uiMessages.emit(UIMessage.Error(message))
             }
         }
@@ -76,7 +74,7 @@ open class AuthViewModel(application: Application) : AndroidViewModel(applicatio
             validateUsername(username)
             validateEmail(email)
             validatePin(pin)
-            validatePhoneNumber(phoneNumber)
+            validatePhoneNumber(phone)
 
             if (!agreedToTerms) {
                 _uiMessages.emit(UIMessage.Error("You must agree to terms and conditions before continuing"))
@@ -90,36 +88,28 @@ open class AuthViewModel(application: Application) : AndroidViewModel(applicatio
             // Generate private and public key pair.
             // Use user's email as private key's filename
             val filesDir = getApplication<Application>().filesDir.toString()
-            val privKeyFile = File(
-                filesDir, "$email.key",
-            )
-            val pubKeyFile = File(
-                filesDir, "$email.pub",
-            )
-            val keyPair: KeyPair? = generateAndSaveKeyPair(pin, privKeyFile, pubKeyFile)
-            if (keyPair == null) {
+            val hashedPin: String? = sha256Hash(pin.toByteArray())?.toHexString()
+            val privKeyFile = File(filesDir, "$email+$hashedPin.key")
+            val pubKeyFile = File(filesDir, "$email+$hashedPin.pub")
+
+            val keypair: KeyPair? = generateAndSaveKeyPair(pin, privKeyFile, pubKeyFile)
+            if (keypair == null) {
                 _uiMessages.emit(UIMessage.Error("Unexpected error creating account"))
                 return@withContext false
             }
 
             // Send public key to server
-            val pubKeyBytes = Base64.encode(keyPair.public.pemEncode(), Base64.DEFAULT)
-            val requestFile =
-                pubKeyBytes.toRequestBody("application/octet-stream".toMediaTypeOrNull())
-            val body = MultipartBody.Part.createFormData(
-                "public_key",
-                pubKeyFile.name,
-                requestFile,
+            val pubKeyBytes = keypair.public.pemEncode()
+            val request = RegisterRequest(
+                username = username,
+                email = email,
+                password = pin,
+                phone = phone,
+                publicKey = Base64.encodeToString(pubKeyBytes, Base64.NO_WRAP),
             )
 
-            // Extra form fields
-            val username = username.toRequestBody("text/plain".toMediaTypeOrNull())
-            val email = email.toRequestBody("text/plain".toMediaTypeOrNull())
-            val phoneNumber = phoneNumber.toRequestBody("text/plain".toMediaTypeOrNull())
-
-            val response = Api.authService.registerUser(
-                body, username, email, phoneNumber,
-            )
+            val authApi = Api.getAuthApi(email, application.applicationContext)
+            val response = authApi.registerUser(request)
             if (!response.isSuccessful) {
                 val signupErrors = response.extractErrorMessage()
                 signupErrors?.let {
@@ -150,36 +140,31 @@ open class AuthViewModel(application: Application) : AndroidViewModel(applicatio
 
             val hashedPin: String? = sha256Hash(pin.toByteArray())?.toHexString()
 
+            // Upload user's public key
             // Use user's email as private key's filename
             val filesDir = getApplication<Application>().filesDir.toString()
-            val privKeyFile = File(
-                filesDir, "$email+$hashedPin.key"
-            )
-            val privateKey: PrivateKey = loadAndDecryptPrivateKey(pin, privKeyFile) ?: run {
-                // Error loading user's private key.
+            val privKeyFile = File(filesDir, "$email+$hashedPin.key")
+            val pubKeyFile = File(filesDir, "$email+$hashedPin.pub")
+
+            val keypair: KeyPair = loadUsersKeyPair(pin, privKeyFile, pubKeyFile) ?: run {
+                // Error loading user's key pair.
                 // Maybe they are logging in from this device for first time???
                 // In that case, we generate new key pair
-                val pubKeyFile = File(
-                    filesDir, "$email.pub"
-                )
-                val keyPair = generateAndSaveKeyPair(pin, privKeyFile, pubKeyFile)
-                if (keyPair == null) {
+                val keypair = generateAndSaveKeyPair(pin, privKeyFile, pubKeyFile)
+                if (keypair == null) {
                     _uiMessages.emit(UIMessage.Error("Unexpected error logging in"))
                     return@withContext false
                 }
-                keyPair.private
+                keypair
             }
+            val request = LoginRequest(
+                email = email,
+                password = pin,
+                publicKey = Base64.encodeToString(keypair.public.pemEncode(), Base64.NO_WRAP)
+            )
 
-            // Sign user's email with private key to authenticate with server
-            val signature: ByteArray? = signData(email.toByteArray(), privateKey)
-            if (signature == null) {
-                _uiMessages.emit(UIMessage.Error("Unexpected error logging in"))
-                return@withContext false
-            }
-            val base64EncodedSignature = Base64.encodeToString(signature, Base64.DEFAULT)
-
-            val request = LoginRequest(email, base64EncodedSignature)
-            val response = Api.authService.loginUser(request)
+            val authApi = Api.getAuthApi(email, application.applicationContext)
+            val response = authApi.loginUser(request)
             if (!response.isSuccessful) {
                 val loginErrors = response.extractErrorMessage()
                 loginErrors?.let {
@@ -195,8 +180,9 @@ open class AuthViewModel(application: Application) : AndroidViewModel(applicatio
                 MainActivity.SHARED_PREFERENCES, Context.MODE_PRIVATE
             )
             sharedPrefs.edit {
-                putString(MainActivity.USERNAME, username)
+                putString(MainActivity.EMAIL, email)
                 putString(MainActivity.PRIVATE_KEY_FILENAME, privKeyFile.name)
+                putString(MainActivity.PUBLIC_KEY_FILENAME, pubKeyFile.name)
             }
 
             _uiMessages.emit(UIMessage.Info("Login successful"))
@@ -216,8 +202,9 @@ open class AuthViewModel(application: Application) : AndroidViewModel(applicatio
                 UIMessage.Loading("Sending forgot password request")
             )
 
+            val authApi = Api.getAuthApi(email, application.applicationContext)
             val request = EmailRequest(email)
-            val response = Api.authService.forgotPassword(request)
+            val response = authApi.forgotPassword(request)
             if (!response.isSuccessful) {
                 val errorMessage = response.extractErrorMessage()
                 errorMessage?.let {
@@ -242,8 +229,9 @@ open class AuthViewModel(application: Application) : AndroidViewModel(applicatio
                 UIMessage.Loading("Resetting account password")
             )
 
+            val authApi = Api.getAuthApi(email, application.applicationContext)
             val request = PasswordResetRequest(otp, email, pin)
-            val response = Api.authService.resetPassword(request)
+            val response = authApi.resetPassword(request)
             if (!response.isSuccessful) {
                 val errorMessage = response.extractErrorMessage()
                 errorMessage?.let {
