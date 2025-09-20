@@ -108,7 +108,7 @@ fun Menu(
                     expanded = false
 
                     appViewModel.clearCookies()
-                    navigateTo(Routes.LoginScreen)
+                    navigateTo(Routes.Logout)
                 },
                 leadingIconId = R.drawable.logout_24dp
             )

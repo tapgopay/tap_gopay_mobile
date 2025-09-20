@@ -10,4 +10,6 @@ enum class Routes {
     RequestPaymentScreen,
     ScanQRCodeScreen,
     PaymentScreen,
+
+    Logout, // Not an actual screen
 }
