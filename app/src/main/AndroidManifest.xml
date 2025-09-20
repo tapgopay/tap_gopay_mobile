@@ -19,14 +19,14 @@
         android:theme="@style/Theme.TapGoPay"
         tools:targetApi="31">
         <service
-            android:name=".NotificationService"
+            android:name=".remote.NotificationService"
             android:enabled="true"
             android:exported="false" />
 
+        <!-- Entry Point -->
         <activity
-            android:name=".MainActivity"
+            android:name=".LoginActivity"
             android:exported="true"
-            android:label="@string/app_name"
             android:theme="@style/Theme.TapGoPay">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -34,6 +34,13 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+
+        <!-- Session Activity -->
+        <activity
+            android:name=".MainActivity"
+            android:theme="@style/Theme.TapGoPay">
+        </activity>
+
     </application>
 
 </manifest>

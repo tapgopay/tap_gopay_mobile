@@ -1,5 +1,6 @@
 package com.example.tapgopay.screens
 
+import android.widget.Toast
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
@@ -30,6 +31,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -148,25 +150,36 @@ fun ProfileScreen(
                 }
             }
 
+            val context = LocalContext.current
+
             SettingsItem(
                 title = "Add Nominee",
                 subtitle = "Add a third person to your account in case of unexpected event",
                 iconId = R.drawable.group_add_24dp,
-                onClick = {}
+                onClick = {
+                    Toast.makeText(context, "Not yet implemented", Toast.LENGTH_SHORT)
+                        .show()
+                }
             )
 
             SettingsItem(
                 title = "Wallets",
                 subtitle = "Manage all your physical and virtual wallets",
                 iconId = R.drawable.wallet2_24dp,
-                onClick = {}
+                onClick = {
+                    Toast.makeText(context, "Not yet implemented", Toast.LENGTH_SHORT)
+                        .show()
+                }
             )
 
             SettingsItem(
                 title = "Device & Credentials",
                 subtitle = "Manage your usernames and passwords",
                 iconId = R.drawable.phone_android_24dp,
-                onClick = {}
+                onClick = {
+                    Toast.makeText(context, "Not yet implemented", Toast.LENGTH_SHORT)
+                        .show()
+                }
             )
 
             SettingsItem(
@@ -181,7 +194,10 @@ fun ProfileScreen(
             SettingsItem(
                 title = "Delete My Account",
                 iconId = R.drawable.delete_24dp,
-                onClick = {}
+                onClick = {
+                    Toast.makeText(context, "Not yet implemented", Toast.LENGTH_SHORT)
+                        .show()
+                }
             )
         }
     }

@@ -7,28 +7,18 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Scaffold
-import androidx.compose.ui.Modifier
 import androidx.core.content.ContextCompat
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navigation
 import com.example.tapgopay.data.AppViewModel
-import com.example.tapgopay.data.AuthViewModel
 import com.example.tapgopay.remote.NotificationService
-import com.example.tapgopay.screens.ForgotPasswordScreen
 import com.example.tapgopay.screens.HomeScreen
-import com.example.tapgopay.screens.LoginScreen
 import com.example.tapgopay.screens.PaymentScreen
 import com.example.tapgopay.screens.ProfileScreen
 import com.example.tapgopay.screens.RequestPaymentScreen
-import com.example.tapgopay.screens.ResetPasswordScreen
 import com.example.tapgopay.screens.Routes
 import com.example.tapgopay.screens.ScanQRCodeScreen
-import com.example.tapgopay.screens.SignUpScreen
 import com.example.tapgopay.ui.theme.TapGoPayTheme
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -71,121 +61,84 @@ class MainActivity : ComponentActivity() {
         val intent = Intent(this, NotificationService::class.java)
         ContextCompat.startForegroundService(this, intent)
 
+        val appViewModel = AppViewModel(this@MainActivity.application)
+
         enableEdgeToEdge()
         setContent {
             TapGoPayTheme {
                 val navController = rememberNavController()
 
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    NavHost(
-                        navController = navController,
-                        startDestination = Routes.LoginScreen.name,
-                        modifier = Modifier.padding(innerPadding),
-                    ) {
-                        composable(route = Routes.LoginScreen.name) {
-                            LoginScreen(
-                                navigateTo = { route ->
-                                    navController.navigate(route = route.name)
-                                },
-                            )
-                        }
+                NavHost(
+                    navController = navController,
+                    startDestination = Routes.LoginScreen.name,
+                ) {
+                    composable(route = Routes.HomeScreen.name) {
+                        HomeScreen(
+                            appViewModel = appViewModel,
+                            navigateTo = { route ->
+                                when (route) {
+                                    Routes.Logout -> {
+                                        val intent =
+                                            Intent(this@MainActivity, LoginActivity::class.java)
+                                        startActivity(intent)
+                                        finish()
+                                    }
 
-                        composable(route = Routes.SignUpScreen.name) {
-                            SignUpScreen(
-                                navigateTo = { route ->
-                                    navController.navigate(route = route.name)
-                                }
-                            )
-                        }
-
-                        navigation(
-                            startDestination = Routes.ForgotPasswordScreen.name,
-                            route = "Welcome Home"
-                        ) {
-                            val appViewModel = AppViewModel(this@MainActivity.application)
-
-                            composable(route = Routes.HomeScreen.name) {
-                                HomeScreen(
-                                    appViewModel = appViewModel,
-                                    navigateTo = { route ->
+                                    else -> {
                                         navController.navigate(route = route.name)
                                     }
-                                )
-                            }
-
-                            composable(route = Routes.PaymentScreen.name) {
-                                PaymentScreen(
-                                    appViewModel = appViewModel,
-                                    goBack = {
-                                        navController.popBackStack()
-                                    },
-                                    navigateTo = { route ->
-                                        navController.navigate(route.name)
-                                    }
-                                )
-                            }
-                        }
-
-                        composable(route = Routes.ProfileScreen.name) {
-                            ProfileScreen(
-                                navigateTo = { route ->
-                                    navController.navigate(route = route.name)
-                                },
-                                goBack = {
-                                    navController.popBackStack()
                                 }
-                            )
-                        }
-
-                        composable(route = Routes.RequestPaymentScreen.name) {
-                            RequestPaymentScreen(
-                                navigateTo = { route ->
-                                    navController.navigate(route.name)
-                                }
-                            )
-                        }
-
-                        composable(route = Routes.ScanQRCodeScreen.name) {
-                            ScanQRCodeScreen(
-                                qrCodeContents = qrCodeContents ?: emptyMap(),
-                                scanQRCode = {
-                                    val options = ScanOptions().apply {
-                                        setDesiredBarcodeFormats(ScanOptions.QR_CODE)
-                                        setPrompt("Scan QR Code")
-                                        setCameraId(0)
-                                        setBeepEnabled(true)
-                                    }
-                                    barcodeLauncher.launch(options)
-                                },
-                                navigateTo = { route ->
-                                    navController.navigate(route.name)
-                                }
-                            )
-                        }
-
-                        navigation(
-                            startDestination = Routes.ForgotPasswordScreen.name,
-                            route = "Forgot_Password"
-                        ) {
-                            val authViewModel = AuthViewModel(this@MainActivity.application)
-
-                            composable(route = Routes.ForgotPasswordScreen.name) {
-                                ForgotPasswordScreen(
-                                    authViewModel = authViewModel,
-                                    navigateTo = { route ->
-                                        navController.navigate(route.name)
-                                    },
-                                )
                             }
-                            composable(route = Routes.ResetPasswordScreen.name) {
-                                ResetPasswordScreen(
-                                    authViewModel = authViewModel,
-                                    navigateTo = { route ->
-                                        navController.navigate(route.name)
-                                    },
-                                )
+                        )
+                    }
+
+                    composable(route = Routes.PaymentScreen.name) {
+                        PaymentScreen(
+                            appViewModel = appViewModel,
+                            goBack = {
+                                navController.popBackStack()
+                            },
+                            navigateTo = { route ->
+                                navController.navigate(route.name)
                             }
-                        }
+                        )
+                    }
+
+                    composable(route = Routes.ProfileScreen.name) {
+                        ProfileScreen(
+                            navigateTo = { route ->
+                                navController.navigate(route = route.name)
+                            },
+                            goBack = {
+                                navController.popBackStack()
+                            }
+                        )
+                    }
+
+                    composable(route = Routes.RequestPaymentScreen.name) {
+                        RequestPaymentScreen(
+                            navigateTo = { route ->
+                                navController.navigate(route.name)
+                            }
+                        )
+                    }
+
+                    composable(route = Routes.ScanQRCodeScreen.name) {
+                        ScanQRCodeScreen(
+                            qrCodeContents = qrCodeContents ?: emptyMap(),
+                            scanQRCode = {
+                                val options = ScanOptions().apply {
+                                    setDesiredBarcodeFormats(ScanOptions.QR_CODE)
+                                    setPrompt("Scan QR Code")
+                                    setCameraId(0)
+                                    setBeepEnabled(true)
+                                }
+                                barcodeLauncher.launch(options)
+                            },
+                            navigateTo = { route ->
+                                navController.navigate(route.name)
+                            }
+                        )
                     }
                 }
             }
