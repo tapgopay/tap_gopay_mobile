@@ -1,13 +1,15 @@
 package com.example.tapgopay.remote
 
+import com.example.tapgopay.data.SHA256Hash
 import com.example.tapgopay.data.alice
-import com.example.tapgopay.data.sha256Hash
+import com.example.tapgopay.data.signData
 import com.google.gson.annotations.SerializedName
 import retrofit2.Response
 import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
+import java.security.PrivateKey
 import java.time.LocalDateTime
 import java.util.Locale
 
@@ -16,6 +18,7 @@ data class Wallet(
     val username: String,
     @SerializedName("phone_no") val phoneNo: String,
     @SerializedName("wallet_address") val walletAddress: String,
+    @SerializedName("wallet_name") val walletName: String,
     @SerializedName("initial_deposit") val initialDeposit: Double,
     @SerializedName("is_active") var isActive: Boolean,
     @SerializedName("created_at") val createdAt: LocalDateTime,
@@ -32,14 +35,18 @@ data class TransactionRequest(
     val sender: String,
     val receiver: String,
     val amount: Double,
+    var fee: Double = 0.0,
     @SerializedName("timestamp") val timestamp: String = LocalDateTime.now().toString(),
     var signature: String = "", // Base64-encoded string
     @SerializedName("public_key_hash") var pubKeyHash: String = "", // Base64-encoded string
 )
 
-fun TransactionRequest.hashedPayload(): ByteArray? {
-    val payload = String.format(Locale.US, "%s|%s|%.2f|%s", sender, receiver, amount, timestamp)
-    return sha256Hash(payload.toByteArray())
+fun TransactionRequest.signPayload(privKey: PrivateKey): ByteArray? {
+    val payload =
+        String.format(Locale.US, "%s|%s|%.2f|%.2f|%s", sender, receiver, amount, fee, timestamp)
+    val hashedPayload = SHA256Hash(payload.toByteArray()) ?: return null
+    val signature = signData(hashedPayload, privKey)
+    return signature
 }
 
 fun TransactionRequest.asResult(): TransactionResult {
@@ -75,9 +82,19 @@ fun TransactionResult.isIncoming(): Boolean {
     return isIncomingTransaction
 }
 
+data class CreateWalletRequest(
+    @SerializedName("wallet_name") val walletName: String
+)
+
+data class TransactionFee(
+    @SerializedName("min_amount") val minAmount: Double,
+    @SerializedName("max_amount") val maxAmount: Double,
+    val fee: Double,
+)
+
 interface WalletService {
     @POST("/new-wallet")
-    suspend fun newWallet(): Response<Wallet>
+    suspend fun newWallet(@Body request: CreateWalletRequest): Response<Wallet>
 
     @GET("/wallets")
     suspend fun getAllWallets(): Response<List<Wallet>>
@@ -93,4 +110,7 @@ interface WalletService {
 
     @POST("/transfer-funds")
     suspend fun transferFunds(@Body req: TransactionRequest): Response<TransactionResult>
+
+    @GET("/all-transaction-fees")
+    suspend fun getAllTransactionFees(): Response<List<TransactionFee>>
 }

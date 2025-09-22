@@ -174,7 +174,7 @@ fun loadUsersKeyPair(password: String, privKeyFile: File, pubKeyFile: File): Key
     }
 }
 
-fun sha256Hash(data: ByteArray): ByteArray? {
+fun SHA256Hash(data: ByteArray): ByteArray? {
     try {
         val messageDigest = MessageDigest.getInstance("SHA-256")
         messageDigest.update(data)

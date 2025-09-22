@@ -7,6 +7,7 @@ import android.provider.ContactsContract
 import android.util.Base64
 import android.util.Log
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
@@ -18,11 +19,13 @@ import androidx.lifecycle.viewModelScope
 import com.example.tapgopay.MainActivity
 import com.example.tapgopay.remote.Api
 import com.example.tapgopay.remote.Contact
+import com.example.tapgopay.remote.CreateWalletRequest
+import com.example.tapgopay.remote.TransactionFee
 import com.example.tapgopay.remote.TransactionRequest
 import com.example.tapgopay.remote.TransactionResult
 import com.example.tapgopay.remote.Wallet
 import com.example.tapgopay.remote.asResult
-import com.example.tapgopay.remote.hashedPayload
+import com.example.tapgopay.remote.signPayload
 import com.example.tapgopay.utils.extractErrorMessage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -54,23 +57,20 @@ fun Recipient.toContact(): Contact {
 }
 
 open class AppViewModel(application: Application) : AndroidViewModel(application) {
-    companion object {
-        const val MIN_WALLET_ADDR_LEN: Int = 12
-    }
-
     var sender by mutableStateOf<Wallet?>(null)
     var receiver by mutableStateOf<Recipient?>(null)
         private set
-    var amount by mutableStateOf("0.0")
+    var amount by mutableDoubleStateOf(0.0)
     var pin by mutableStateOf("")
 
     private var _contacts = mutableStateListOf<Contact>()
     val contacts: List<Contact>
         get() = _contacts.toList()
-
     var wallets = mutableStateMapOf<String, Wallet>()
         private set
     val transactions = mutableStateListOf<TransactionResult>()
+    private var _transactionFees = mutableStateListOf<TransactionFee>()
+
     private val _uiMessages = MutableSharedFlow<UIMessage>(extraBufferCapacity = 1)
     val uiMessages = _uiMessages.asSharedFlow()
 
@@ -155,23 +155,26 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    private fun getLoggedInUsersEmail(): String? {
-        val commonSharedPrefs =
+    private fun getAuthEmail(): String? {
+        val sharedPrefs =
             application.getSharedPreferences(MainActivity.SHARED_PREFERENCES, Context.MODE_PRIVATE)
-        return commonSharedPrefs.getString(MainActivity.EMAIL, "")
+        return sharedPrefs.getString(MainActivity.EMAIL, "")
     }
 
-    suspend fun newWallet() = withContext(Dispatchers.IO) {
+    suspend fun newWallet(walletName: String) = withContext(Dispatchers.IO) {
         try {
             _uiMessages.emit(UIMessage.Loading("Creating new wallet"))
 
-            val usersEmail = getLoggedInUsersEmail()
-            if (usersEmail == null) {
-                throw IllegalStateException("Users email could not be found in shared preferences after login")
-            }
-            val walletApi = Api.getWalletApi(usersEmail, application.applicationContext)
+            validateWalletName(walletName)
 
-            val response = walletApi.newWallet()
+            val email = getAuthEmail()
+            if (email == null) {
+                throw IllegalStateException("Logged in user's email could not be found")
+            }
+
+            val walletApi = Api.getWalletApi(email, application.applicationContext)
+            val request = CreateWalletRequest(walletName)
+            val response = walletApi.newWallet(request)
             if (!response.isSuccessful) {
                 val errorMessage: String? = response.extractErrorMessage()
                 errorMessage?.let {
@@ -192,11 +195,11 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
         try {
             Log.d(MainActivity.TAG, "Fetching wallets")
 
-            val usersEmail = getLoggedInUsersEmail()
-            if (usersEmail == null) {
-                throw IllegalStateException("Users email could not be found in shared preferences after login")
+            val email = getAuthEmail()
+            if (email == null) {
+                throw IllegalStateException("Logged in user's email could not be found")
             }
-            val walletApi = Api.getWalletApi(usersEmail, application.applicationContext)
+            val walletApi = Api.getWalletApi(email, application.applicationContext)
 
             val response = walletApi.getAllWallets()
             if (!response.isSuccessful) {
@@ -207,7 +210,7 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
                 return@withContext
             }
 
-            val fetchedWallets = response.body()
+            val fetchedWallets: List<Wallet>? = response.body()
             fetchedWallets?.forEach { wallet ->
                 wallets[wallet.walletAddress] = wallet
             }
@@ -239,11 +242,51 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    suspend fun transferFunds(sender: Wallet): TransactionResult {
+    suspend fun getTransactionFees(amount: Double): Double? = withContext(Dispatchers.IO) {
+        try {
+            // Check if transaction fee was already fetched
+            var transactionFee: TransactionFee? = _transactionFees.find {
+                amount >= it.minAmount && amount <= it.maxAmount
+            }
+            if (transactionFee != null) {
+                return@withContext transactionFee.fee
+            }
+
+            // Fetch transaction fee from server
+            val email: String? = getAuthEmail()
+            if (email == null) {
+                throw IllegalStateException("Logged in user's email could not be found")
+            }
+
+            val walletApi = Api.getWalletApi(email, application.applicationContext)
+            val response = walletApi.getAllTransactionFees()
+            if (!response.isSuccessful) {
+                val errorMessage: String? = response.extractErrorMessage()
+                errorMessage?.let {
+                    _uiMessages.emit(UIMessage.Error(it))
+                }
+                return@withContext null
+            }
+
+            val transactionFees: List<TransactionFee> = response.body() ?: return@withContext null
+            _transactionFees.addAll(transactionFees)
+
+            transactionFee = _transactionFees.find {
+                amount >= it.minAmount && amount <= it.maxAmount
+            }
+            return@withContext transactionFee?.fee
+
+        } catch (e: Exception) {
+            handleException(e, "Error fetching transaction fees")
+            return@withContext null
+        }
+    }
+
+    suspend fun transferFunds(sender: Wallet): TransactionResult = withContext(Dispatchers.IO) {
         val transactionRequest = TransactionRequest(
             sender = sender.walletAddress,
             receiver = receiver?.value ?: "",
-            amount = amount.toDoubleOrNull() ?: 0.0,
+            amount = amount,
         )
 
         try {
@@ -254,41 +297,36 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
 
             _uiMessages.emit(UIMessage.Loading("Transferring funds"))
 
-            // Load user's key pair
-            val sharedPrefs = getApplication<Application>().getSharedPreferences(
-                MainActivity.SHARED_PREFERENCES, Context.MODE_PRIVATE
-            )
-            val privKeyFilename: String =
-                sharedPrefs.getString(MainActivity.PRIVATE_KEY_FILENAME, "") ?: ""
-            val pubKeyFilename: String =
-                sharedPrefs.getString(MainActivity.PUBLIC_KEY_FILENAME, "") ?: ""
+            val fee: Double =
+                getTransactionFees(amount) ?: return@withContext transactionRequest.asResult()
+            transactionRequest.fee = fee
 
-            val filesDir: String = getApplication<Application>().filesDir.toString()
-            val privKeyFile = File(filesDir, privKeyFilename)
-            val pubKeyFile = File(filesDir, pubKeyFilename)
+            // Load user's key pair
+            val email = getAuthEmail()
+            if (email == null) {
+                throw IllegalStateException("Logged in user's email could not be found")
+            }
+
+            val filesDir = getApplication<Application>().filesDir.toString()
+            val privKeyFile = File(filesDir, "$email.key")
+            val pubKeyFile = File(filesDir, "$email.pub")
             val keypair: KeyPair = loadUsersKeyPair(pin, privKeyFile, pubKeyFile)
-                ?: return transactionRequest.asResult()
+                ?: return@withContext transactionRequest.asResult()
 
             // Sign transaction details with private key
-            val hashedPayload: ByteArray =
-                transactionRequest.hashedPayload() ?: return transactionRequest.asResult()
-            val signature: ByteArray =
-                signData(hashedPayload, keypair.private) ?: return transactionRequest.asResult()
+            val signature: ByteArray = transactionRequest.signPayload(keypair.private)
+                ?: return@withContext transactionRequest.asResult()
             transactionRequest.signature = Base64.encodeToString(signature, Base64.NO_WRAP)
 
-            // Tell server which public key to use to verify signature
+            // Send public key hash so server which public key
+            // to use to verify signature
             val pubKeyBytes = keypair.public.pemEncode()
-            val pubKeyHash = sha256Hash(pubKeyBytes)
+            val pubKeyHash = SHA256Hash(pubKeyBytes)
             transactionRequest.pubKeyHash = Base64.encodeToString(pubKeyHash, Base64.NO_WRAP)
 
             Log.d(MainActivity.TAG, transactionRequest.toString())
 
-
-            val usersEmail = getLoggedInUsersEmail()
-            if (usersEmail == null) {
-                throw IllegalStateException("Users email could not be found in shared preferences after login")// Send transfer funds request
-            }
-            val walletApi = Api.getWalletApi(usersEmail, application.applicationContext)
+            val walletApi = Api.getWalletApi(email, application.applicationContext)
 
             val response = walletApi.transferFunds(transactionRequest)
             if (!response.isSuccessful) {
@@ -296,14 +334,14 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
                 errorMessage?.let {
                     _uiMessages.emit(UIMessage.Error(it))
                 }
-                return transactionRequest.asResult()
+                return@withContext transactionRequest.asResult()
             }
             val result: TransactionResult = response.body() ?: transactionRequest.asResult()
-            return result
+            return@withContext result
 
         } catch (e: Exception) {
             handleException(e, "Error transferring funds; ${e.message}")
-            return transactionRequest.asResult()
+            return@withContext transactionRequest.asResult()
         }
     }
 
@@ -319,11 +357,11 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
         try {
             _uiMessages.emit(UIMessage.Loading("Freezing wallet"))
 
-            val usersEmail = getLoggedInUsersEmail()
-            if (usersEmail == null) {
-                throw IllegalStateException("Users email could not be found in shared preferences after login")
+            val email = getAuthEmail()
+            if (email == null) {
+                throw IllegalStateException("Logged in user's email could not be found")
             }
-            val walletApi = Api.getWalletApi(usersEmail, application.applicationContext)
+            val walletApi = Api.getWalletApi(email, application.applicationContext)
 
             val response = walletApi.freezeWallet(wallet.walletAddress)
             if (!response.isSuccessful) {
@@ -349,11 +387,11 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
         try {
             _uiMessages.emit(UIMessage.Loading("Activating wallet"))
 
-            val usersEmail = getLoggedInUsersEmail()
-            if (usersEmail == null) {
-                throw IllegalStateException("Users email could not be found in shared preferences after login")
+            val email = getAuthEmail()
+            if (email == null) {
+                throw IllegalStateException("Logged in user's email could not be found")
             }
-            val walletApi = Api.getWalletApi(usersEmail, application.applicationContext)
+            val walletApi = Api.getWalletApi(email, application.applicationContext)
 
             val response = walletApi.activateWallet(wallet.walletAddress)
             if (!response.isSuccessful) {
@@ -391,12 +429,20 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun clearCookies() {
-        val commonSharedPrefs =
-            application.getSharedPreferences(MainActivity.SHARED_PREFERENCES, Context.MODE_PRIVATE)
-        val usersEmail: String? = commonSharedPrefs.getString(MainActivity.EMAIL, "")
+    private fun validateWalletName(name: String) {
+        val name = name.trim()
+        if (name.isEmpty()) {
+            throw IllegalArgumentException("Wallet name cannot be empty")
+        }
 
-        usersEmail?.let { email ->
+        if (name.length < MIN_NAME_LENGTH) {
+            throw IllegalArgumentException("Wallet name too short")
+        }
+    }
+
+    fun clearCookies() {
+        val email: String? = getAuthEmail()
+        email?.let { email ->
             val usersSharedPrefs = application.getSharedPreferences(
                 "${MainActivity.SHARED_PREFERENCES}_${email}",
                 Context.MODE_PRIVATE

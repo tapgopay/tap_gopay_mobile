@@ -1,5 +1,6 @@
 package com.example.tapgopay.screens
 
+import android.app.Application
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -29,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -69,17 +71,19 @@ fun SignUpScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
                         text = "Join TapGoPay today",
-                        style = MaterialTheme.typography.headlineSmall,
+                        style = MaterialTheme.typography.headlineLarge,
                         color = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.padding(end = 24.dp),
+                        textAlign = TextAlign.Center,
                     )
 
                     Text(
                         text = "Create An Account",
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.headlineSmall,
                     )
                 }
 
@@ -111,9 +115,9 @@ fun SignUpScreen(
 
                     InputField(
                         label = "Phone Number",
-                        value = authViewModel.phone,
+                        value = authViewModel.phoneNo,
                         onValueChange = { value ->
-                            authViewModel.phone = value
+                            authViewModel.phoneNo = value
                         },
                         keyboardType = KeyboardType.Phone,
                         leadingIconId = R.drawable.call_24dp,
@@ -236,7 +240,15 @@ fun SignUpScreen(
 @Preview(showBackground = true)
 @Composable
 fun PreviewSignUpScreen() {
+    val app = Application()
+    val fakeViewModel = object : AuthViewModel(app) {
+        // override state with sample data
+    }
+
     TapGoPayTheme {
-        SignUpScreen(navigateTo = {})
+        SignUpScreen(
+            authViewModel = fakeViewModel,
+            navigateTo = {}
+        )
     }
 }

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -26,6 +27,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -51,10 +53,13 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import com.example.tapgopay.R
 import com.example.tapgopay.data.AppViewModel
+import com.example.tapgopay.data.MIN_NAME_LENGTH
 import com.example.tapgopay.data.UIMessage
 import com.example.tapgopay.remote.Wallet
+import com.example.tapgopay.screens.widgets.InputField
 import com.example.tapgopay.screens.widgets.Menu
 import com.example.tapgopay.screens.widgets.MessageBanner
 import com.example.tapgopay.screens.widgets.Transactions
@@ -71,6 +76,8 @@ fun HomeScreen(
     appViewModel: AppViewModel,
     navigateTo: (Routes) -> Unit,
 ) {
+    var displayCreateWalletDialog by remember { mutableStateOf(false) }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
@@ -81,7 +88,7 @@ fun HomeScreen(
                         style = MaterialTheme.typography.titleLarge,
                     )
                 },
-                modifier = Modifier.padding(horizontal = 16.dp),
+                modifier = Modifier.padding(horizontal = 8.dp),
                 navigationIcon = {
                     IconButton(
                         onClick = {
@@ -103,6 +110,19 @@ fun HomeScreen(
                 }
             )
         },
+        floatingActionButton = {
+            FloatingActionButton(
+                onClick = {
+                    displayCreateWalletDialog = true
+                }
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.add_24dp),
+                    contentDescription = "Create Wallet",
+                    modifier = Modifier.size(32.dp),
+                )
+            }
+        }
     ) { innerPadding ->
         val transactionsSheetState = rememberModalBottomSheetState()
         var viewAllTransactions by remember { mutableStateOf(false) }
@@ -118,7 +138,7 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(horizontal = 12.dp)
+                .padding(horizontal = 8.dp)
         ) {
             Column(
                 modifier = Modifier.fillMaxSize(),
@@ -140,9 +160,7 @@ fun HomeScreen(
                         )
                         ElevatedButton(
                             onClick = {
-                                scope.launch {
-                                    appViewModel.newWallet()
-                                }
+                                displayCreateWalletDialog = true
                             },
                             colors = ButtonDefaults.elevatedButtonColors().copy(
                                 containerColor = MaterialTheme.colorScheme.primary,
@@ -179,6 +197,20 @@ fun HomeScreen(
                             }
                         }
                     }
+                }
+
+                if (displayCreateWalletDialog) {
+                    CreateWalletDialog(
+                        onDismissRequest = {
+                            displayCreateWalletDialog = false
+                        },
+                        onContinue = { walletName ->
+                            scope.launch {
+                                appViewModel.newWallet(walletName)
+                            }
+                            displayCreateWalletDialog = false
+                        }
+                    )
                 }
 
                 Transactions(
@@ -231,6 +263,65 @@ fun HomeScreen(
                     contentAlignment = Alignment.BottomCenter,
                 ) {
                     MessageBanner(it)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun CreateWalletDialog(
+    onDismissRequest: () -> Unit,
+    onContinue: (String) -> Unit,
+) {
+    var walletName by remember { mutableStateOf("") }
+
+    Dialog(
+        onDismissRequest = onDismissRequest,
+    ) {
+        Card(
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(
+                modifier = Modifier.padding(
+                    horizontal = 12.dp, vertical = 32.dp,
+                ),
+                verticalArrangement = Arrangement.spacedBy(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+                Text(
+                    "Create Wallet",
+                    style = MaterialTheme.typography.headlineSmall,
+                )
+
+                InputField(
+                    value = walletName,
+                    onValueChange = {
+                        walletName = it
+                    },
+                    label = "Enter wallet name",
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                ElevatedButton(
+                    onClick = {
+                        onContinue(walletName)
+                    },
+                    enabled = walletName.length > MIN_NAME_LENGTH,
+                    colors = ButtonDefaults.elevatedButtonColors().copy(
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                    ),
+                    shape = RoundedCornerShape(12.dp),
+                ) {
+                    Text(
+                        "Confirm",
+                        style = MaterialTheme.typography.titleLarge,
+                        modifier = Modifier.padding(
+                            vertical = 12.dp, horizontal = 24.dp
+                        ),
+                    )
                 }
             }
         }

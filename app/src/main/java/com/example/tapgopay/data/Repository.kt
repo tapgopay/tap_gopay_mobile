@@ -58,6 +58,7 @@ fun generateFakeWallet(id: Int): Wallet {
     val username = usernames.random()
     val phoneNo = "+2547${Random.nextInt(1000000, 9999999)}"
     val walletAddress = "0x" + List(16) { "0123456789abcdef".random() }.joinToString("")
+    val walletName = List(8) { "abcdefghijklmnopqrstuvwxyz".random() }.joinToString("")
     val initialDeposit = Random.nextDouble(100.0, 5000.0)
     val isActive = Random.nextBoolean()
     val timestamp = LocalDateTime.now().minusDays(Random.nextLong(1, 365))
@@ -68,9 +69,10 @@ fun generateFakeWallet(id: Int): Wallet {
         username = username,
         phoneNo = phoneNo,
         walletAddress = walletAddress,
+        walletName = walletName,
         initialDeposit = initialDeposit,
         isActive = isActive,
         createdAt = timestamp,
-        balance = balance
+        balance = balance,
     )
 }

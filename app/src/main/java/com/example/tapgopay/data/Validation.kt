@@ -2,11 +2,11 @@ package com.example.tapgopay.data
 
 import android.util.Patterns
 import androidx.core.text.isDigitsOnly
-import com.example.tapgopay.data.AppViewModel.Companion.MIN_WALLET_ADDR_LEN
 
 const val MIN_NAME_LENGTH = 4
 const val MIN_PIN_LENGTH = 4
 const val MIN_OTP_LENGTH = 4
+const val MIN_WALLET_ADDR_LENGTH: Int = 12
 
 fun validateUsername(username: String) {
     if (username.length < MIN_NAME_LENGTH) {
@@ -20,8 +20,8 @@ fun validateOtp(otp: String) {
     }
 }
 
-fun validatePhoneNumber(phone: String) {
-    val match = Patterns.PHONE.matcher(phone).matches()
+fun validatePhoneNumber(phoneNo: String) {
+    val match = Patterns.PHONE.matcher(phoneNo).matches()
     if (!match) {
         throw IllegalArgumentException("Invalid phone number")
     }
@@ -102,14 +102,6 @@ fun validateAmount(amount: Double) {
     }
 }
 
-fun validateAmount(amount: String) {
-    val amount: Double =
-        amount.toDoubleOrNull() ?: throw IllegalArgumentException("Amount must be a valid integer")
-    if (amount <= 0) {
-        throw IllegalArgumentException("Please select an amount > 0")
-    }
-}
-
 fun validateWalletAddress(walletAddress: String?) {
     if (walletAddress == null) {
         throw IllegalArgumentException("Wallet address cannot be empty")
@@ -120,7 +112,7 @@ fun validateWalletAddress(walletAddress: String?) {
         throw IllegalArgumentException("Wallet address cannot be empty")
     }
 
-    if (walletAddress.length < MIN_WALLET_ADDR_LEN) {
+    if (walletAddress.length < MIN_WALLET_ADDR_LENGTH) {
         throw IllegalArgumentException("Wallet address too short")
     }
 }

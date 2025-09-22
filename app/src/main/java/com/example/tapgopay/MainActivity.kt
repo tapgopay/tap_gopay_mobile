@@ -30,8 +30,6 @@ class MainActivity : ComponentActivity() {
         const val TAG: String = "TapGoPay"
         const val SHARED_PREFERENCES: String = "SHARED_PREFERENCES"
         const val EMAIL: String = "EMAIL"
-        const val PRIVATE_KEY_FILENAME: String = "PRIVATE_KEY_FILENAME"
-        const val PUBLIC_KEY_FILENAME: String = "PUBLIC_KEY_FILENAME"
     }
 
     private var qrCodeContents: Map<String, String>? = null
