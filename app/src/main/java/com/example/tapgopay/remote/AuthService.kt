@@ -10,7 +10,7 @@ data class RegisterRequest(
     val username: String,
     val email: String,
     val password: String,
-    @SerializedName("phone_no") val phone: String,
+    @SerializedName("phone_no") val phoneNo: String,
     @SerializedName("public_key") val publicKey: String,
 )
 

@@ -60,7 +60,7 @@ fun InputField(
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleLarge,
         )
 
         TextField(
@@ -70,7 +70,7 @@ fun InputField(
                 .fillMaxWidth()
                 .height(64.dp)
                 .shadow(elevation = 8.dp, shape = RoundedCornerShape(8.dp)),
-            textStyle = MaterialTheme.typography.titleMedium,
+            textStyle = MaterialTheme.typography.titleLarge,
             leadingIcon = {
                 // Display leading icon if leadingIconId is not null
                 leadingIconId?.let {
@@ -108,7 +108,7 @@ fun PasswordField(
     ) {
         Text(
             text = label,
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleLarge,
         )
 
         TextField(
@@ -118,7 +118,7 @@ fun PasswordField(
                 .fillMaxWidth()
                 .height(64.dp)
                 .shadow(elevation = 8.dp, shape = RoundedCornerShape(8.dp)),
-            textStyle = MaterialTheme.typography.titleMedium,
+            textStyle = MaterialTheme.typography.titleLarge,
             leadingIcon = {
                 Icon(
                     painter = painterResource(R.drawable.lock_24dp),
@@ -176,7 +176,7 @@ fun PreviewInputField() {
         InputField(
             label = "Enter Username",
             leadingIconId = R.drawable.person_24dp,
-            value = "Death By Romy",
+            value = "John Doe",
             onValueChange = {},
         )
     }
@@ -188,7 +188,7 @@ fun PreviewPasswordField() {
     TapGoPayTheme {
         PasswordField(
             label = "Enter Password",
-            value = "NoMercy",
+            value = "Password",
             onValueChange = {},
             onForgotPassword = {}
         )

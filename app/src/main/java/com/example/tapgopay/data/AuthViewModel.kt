@@ -37,7 +37,7 @@ open class AuthViewModel(application: Application) : AndroidViewModel(applicatio
     var username by mutableStateOf("")
     var email by mutableStateOf("")
     var pin by mutableStateOf("")
-    var phone by mutableStateOf("")
+    var phoneNo by mutableStateOf("")
     var agreedToTerms by mutableStateOf(false)
     var otp by mutableStateOf("")
 
@@ -74,7 +74,7 @@ open class AuthViewModel(application: Application) : AndroidViewModel(applicatio
             validateUsername(username)
             validateEmail(email)
             validatePin(pin)
-            validatePhoneNumber(phone)
+            validatePhoneNumber(phoneNo)
 
             if (!agreedToTerms) {
                 _uiMessages.emit(UIMessage.Error("You must agree to terms and conditions before continuing"))
@@ -87,8 +87,8 @@ open class AuthViewModel(application: Application) : AndroidViewModel(applicatio
 
             // Generate private and public key pair.
             // Use user's email as private key's filename
+            val hashedPin: String? = SHA256Hash(pin.toByteArray())?.toHexString()
             val filesDir = getApplication<Application>().filesDir.toString()
-            val hashedPin: String? = sha256Hash(pin.toByteArray())?.toHexString()
             val privKeyFile = File(filesDir, "$email+$hashedPin.key")
             val pubKeyFile = File(filesDir, "$email+$hashedPin.pub")
 
@@ -104,7 +104,7 @@ open class AuthViewModel(application: Application) : AndroidViewModel(applicatio
                 username = username,
                 email = email,
                 password = pin,
-                phone = phone,
+                phoneNo = phoneNo,
                 publicKey = Base64.encodeToString(pubKeyBytes, Base64.NO_WRAP),
             )
 
@@ -138,13 +138,11 @@ open class AuthViewModel(application: Application) : AndroidViewModel(applicatio
                 UIMessage.Loading("Logging in to your account")
             )
 
-            val hashedPin: String? = sha256Hash(pin.toByteArray())?.toHexString()
-
             // Upload user's public key
             // Use user's email as private key's filename
             val filesDir = getApplication<Application>().filesDir.toString()
-            val privKeyFile = File(filesDir, "$email+$hashedPin.key")
-            val pubKeyFile = File(filesDir, "$email+$hashedPin.pub")
+            val privKeyFile = File(filesDir, "$email.key")
+            val pubKeyFile = File(filesDir, "$email.pub")
 
             val keypair: KeyPair = loadUsersKeyPair(pin, privKeyFile, pubKeyFile) ?: run {
                 // Error loading user's key pair.
@@ -157,10 +155,11 @@ open class AuthViewModel(application: Application) : AndroidViewModel(applicatio
                 }
                 keypair
             }
+            val pubKeyBytes = keypair.public.pemEncode()
             val request = LoginRequest(
                 email = email,
                 password = pin,
-                publicKey = Base64.encodeToString(keypair.public.pemEncode(), Base64.NO_WRAP)
+                publicKey = Base64.encodeToString(pubKeyBytes, Base64.NO_WRAP)
             )
 
             val authApi = Api.getAuthApi(email, application.applicationContext)
@@ -173,16 +172,12 @@ open class AuthViewModel(application: Application) : AndroidViewModel(applicatio
                 return@withContext false
             }
 
-            // Save private key's filepath to shared preferences;
-            // we are going to be needing it throughout the app.
-            // eg. when user wants to make transaction
+            // Save email to shared preferences
             val sharedPrefs = getApplication<Application>().getSharedPreferences(
                 MainActivity.SHARED_PREFERENCES, Context.MODE_PRIVATE
             )
             sharedPrefs.edit {
                 putString(MainActivity.EMAIL, email)
-                putString(MainActivity.PRIVATE_KEY_FILENAME, privKeyFile.name)
-                putString(MainActivity.PUBLIC_KEY_FILENAME, pubKeyFile.name)
             }
 
             _uiMessages.emit(UIMessage.Info("Login successful"))

@@ -1,4 +1,4 @@
-package com.example.tapgopay.screens.widgets
+package com.example.tapgopay.screens.payment_flow
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -31,6 +31,7 @@ import com.example.tapgopay.data.alice
 import com.example.tapgopay.data.generateFakeTransaction
 import com.example.tapgopay.remote.TransactionResult
 import com.example.tapgopay.remote.isSuccessful
+import com.example.tapgopay.screens.widgets.ContactCardColumn
 import com.example.tapgopay.ui.theme.TapGoPayTheme
 import com.example.tapgopay.ui.theme.successColor
 import com.example.tapgopay.utils.formatAmount
