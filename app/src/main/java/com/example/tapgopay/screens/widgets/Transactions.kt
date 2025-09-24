@@ -128,6 +128,7 @@ fun Transaction(
         ),
         shape = RoundedCornerShape(12.dp),
         modifier = Modifier
+            .padding(vertical = 8.dp)
             .clickable { }
     ) {
         Row(
@@ -146,7 +147,7 @@ fun Transaction(
                     }
 
                     withStyle(
-                        SpanStyle(fontWeight = FontWeight.Bold)
+                        SpanStyle(fontWeight = FontWeight.SemiBold)
                     ) {
                         if (transaction.isIncoming()) {
                             append(
@@ -168,7 +169,7 @@ fun Transaction(
 
                 Text(
                     message,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleLarge,
                 )
 
                 Text(

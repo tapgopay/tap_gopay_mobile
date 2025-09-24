@@ -77,7 +77,7 @@ fun PaymentScreen(
                         onPinEntered = {
                             appViewModel.pin = it
                             scope.launch {
-                                transactionResult = appViewModel.transferFunds(sender)
+                                transactionResult = appViewModel.sendMoney(sender)
                                 currentPage++
                             }
                         },

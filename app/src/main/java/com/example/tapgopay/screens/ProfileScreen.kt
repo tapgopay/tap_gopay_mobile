@@ -232,7 +232,7 @@ fun SettingsItem(
             Column {
                 Text(
                     title,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleLarge,
                 )
 
                 subtitle?.let {

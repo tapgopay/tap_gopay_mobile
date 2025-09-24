@@ -1,8 +1,8 @@
 package com.example.tapgopay.data
 
-import com.example.tapgopay.remote.Contact
 import com.example.tapgopay.remote.TransactionResult
 import com.example.tapgopay.remote.Wallet
+import com.example.tapgopay.remote.WalletOwner
 import java.time.LocalDateTime
 import java.util.UUID
 import kotlin.random.Random
@@ -19,17 +19,17 @@ fun generateRandomTransactionId(): String {
 }
 
 // Alice will act as the current account holder
-val alice = Contact("Alice", "+254700111111")
-val bob = Contact("Bob", "12345678910", "+254700222222")
-val charlie = Contact("Charlie", "12345678910", "+254700333333")
-val diana = Contact("Diana", "12345678910", "+254700444444")
+val alice = WalletOwner("Alice", "+254700111111")
+val bob = WalletOwner("Bob", "12345678910", "+254700222222")
+val charlie = WalletOwner("Charlie", "12345678910", "+254700333333")
+val diana = WalletOwner("Diana", "12345678910", "+254700444444")
 
 fun generateFakeTransaction(): TransactionResult {
-    val contacts = mutableListOf<Contact>(alice, bob, charlie, diana)
-    val sender = contacts.random()
+    val walletOwners = mutableListOf<WalletOwner>(alice, bob, charlie, diana)
+    val sender = walletOwners.random()
     val receiver = if (sender == alice) {
-        contacts.remove(alice)
-        contacts.random()
+        walletOwners.remove(alice)
+        walletOwners.random()
     } else {
         alice
     }

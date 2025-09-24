@@ -18,12 +18,12 @@ import androidx.lifecycle.application
 import androidx.lifecycle.viewModelScope
 import com.example.tapgopay.MainActivity
 import com.example.tapgopay.remote.Api
-import com.example.tapgopay.remote.Contact
 import com.example.tapgopay.remote.CreateWalletRequest
 import com.example.tapgopay.remote.TransactionFee
 import com.example.tapgopay.remote.TransactionRequest
 import com.example.tapgopay.remote.TransactionResult
 import com.example.tapgopay.remote.Wallet
+import com.example.tapgopay.remote.WalletOwner
 import com.example.tapgopay.remote.asResult
 import com.example.tapgopay.remote.signPayload
 import com.example.tapgopay.utils.extractErrorMessage
@@ -44,14 +44,14 @@ sealed class Recipient {
     data class PhoneNumber(override val value: String) : Recipient()
 }
 
-fun Recipient.toContact(): Contact {
+fun Recipient.toWalletOwner(): WalletOwner {
     return when (this) {
         is Recipient.PhoneNumber -> {
-            Contact(phoneNo = this.value)
+            WalletOwner(phoneNo = this.value)
         }
 
         is Recipient.AccountNumber -> {
-            Contact(walletAddress = this.value)
+            WalletOwner(walletAddress = this.value)
         }
     }
 }
@@ -63,9 +63,9 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
     var amount by mutableDoubleStateOf(0.0)
     var pin by mutableStateOf("")
 
-    private var _contacts = mutableStateListOf<Contact>()
-    val contacts: List<Contact>
-        get() = _contacts.toList()
+    private var _walletOwners = mutableStateListOf<WalletOwner>()
+    val walletOwners: List<WalletOwner>
+        get() = _walletOwners.toList()
     var wallets = mutableStateMapOf<String, Wallet>()
         private set
     val transactions = mutableStateListOf<TransactionResult>()
@@ -88,7 +88,7 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun getContacts(context: Context) {
+    fun getWalletOwners(context: Context) {
         val contentResolver = context.contentResolver
         val cursor: Cursor? = contentResolver.query(
             ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
@@ -101,7 +101,7 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
             null
         )
 
-        val newContacts = mutableListOf<Contact>()
+        val newWalletOwners = mutableListOf<WalletOwner>()
 
         cursor?.use { it ->
             while (it.moveToNext()) {
@@ -116,19 +116,19 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
                             ContactsContract.CommonDataKinds.Phone.NUMBER
                         )
                     )
-                    val newContact = Contact(
+                    val newWalletOwner = WalletOwner(
                         username = name,
                         phoneNo = phoneNo,
                     )
-                    newContacts.add(newContact)
+                    newWalletOwners.add(newWalletOwner)
 
                 } catch (e: IllegalArgumentException) {
-                    Log.d(MainActivity.TAG, "Contact column not found; ${e.message}")
+                    Log.d(MainActivity.TAG, "WalletOwner column not found; ${e.message}")
                 }
             }
         }
 
-        _contacts.addAll(newContacts)
+        _walletOwners.addAll(newWalletOwners)
     }
 
     private suspend fun handleException(
@@ -161,35 +161,37 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
         return sharedPrefs.getString(MainActivity.EMAIL, "")
     }
 
-    suspend fun newWallet(walletName: String) = withContext(Dispatchers.IO) {
-        try {
-            _uiMessages.emit(UIMessage.Loading("Creating new wallet"))
+    suspend fun newWallet(walletName: String, totalOwners: Int, numSignatures: Int) =
+        withContext(Dispatchers.IO) {
+            try {
+                _uiMessages.emit(UIMessage.Loading("Creating new wallet"))
 
-            validateWalletName(walletName)
+                validateWalletName(walletName)
+                validateNumSignatures(numSignatures)
 
-            val email = getAuthEmail()
-            if (email == null) {
-                throw IllegalStateException("Logged in user's email could not be found")
-            }
-
-            val walletApi = Api.getWalletApi(email, application.applicationContext)
-            val request = CreateWalletRequest(walletName)
-            val response = walletApi.newWallet(request)
-            if (!response.isSuccessful) {
-                val errorMessage: String? = response.extractErrorMessage()
-                errorMessage?.let {
-                    _uiMessages.emit(UIMessage.Error(it))
+                val email = getAuthEmail()
+                if (email == null) {
+                    throw IllegalStateException("Logged in user's email could not be found")
                 }
-                return@withContext
-            }
 
-            response.body()?.let { wallet ->
-                wallets[wallet.walletAddress] = wallet
+                val walletApi = Api.getWalletApi(email, application.applicationContext)
+                val request = CreateWalletRequest(walletName, totalOwners, numSignatures)
+                val response = walletApi.newWallet(request)
+                if (!response.isSuccessful) {
+                    val errorMessage: String? = response.extractErrorMessage()
+                    errorMessage?.let {
+                        _uiMessages.emit(UIMessage.Error(it))
+                    }
+                    return@withContext
+                }
+
+                response.body()?.let { wallet ->
+                    wallets[wallet.walletAddress] = wallet
+                }
+            } catch (e: Exception) {
+                handleException(e, "Error creating new wallet")
             }
-        } catch (e: Exception) {
-            handleException(e, "Error creating new wallet")
         }
-    }
 
     suspend fun getAllWallets() = withContext(Dispatchers.IO) {
         try {
@@ -199,8 +201,8 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
             if (email == null) {
                 throw IllegalStateException("Logged in user's email could not be found")
             }
-            val walletApi = Api.getWalletApi(email, application.applicationContext)
 
+            val walletApi = Api.getWalletApi(email, application.applicationContext)
             val response = walletApi.getAllWallets()
             if (!response.isSuccessful) {
                 val errorMessage: String? = response.extractErrorMessage()
@@ -282,7 +284,7 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    suspend fun transferFunds(sender: Wallet): TransactionResult = withContext(Dispatchers.IO) {
+    suspend fun sendMoney(sender: Wallet): TransactionResult = withContext(Dispatchers.IO) {
         val transactionRequest = TransactionRequest(
             sender = sender.walletAddress,
             receiver = receiver?.value ?: "",
@@ -327,8 +329,7 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
             Log.d(MainActivity.TAG, transactionRequest.toString())
 
             val walletApi = Api.getWalletApi(email, application.applicationContext)
-
-            val response = walletApi.transferFunds(transactionRequest)
+            val response = walletApi.sendMoney(transactionRequest)
             if (!response.isSuccessful) {
                 val errorMessage: String? = response.extractErrorMessage()
                 errorMessage?.let {
@@ -361,8 +362,8 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
             if (email == null) {
                 throw IllegalStateException("Logged in user's email could not be found")
             }
-            val walletApi = Api.getWalletApi(email, application.applicationContext)
 
+            val walletApi = Api.getWalletApi(email, application.applicationContext)
             val response = walletApi.freezeWallet(wallet.walletAddress)
             if (!response.isSuccessful) {
                 val errorMessage: String? = response.extractErrorMessage()
@@ -440,6 +441,12 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
+    private fun validateNumSignatures(num: Int) {
+        if (num <= 0 || num > MAX_WALLET_SIGNATURES) {
+            throw IllegalArgumentException("Invalid number of required signatures on wallet")
+        }
+    }
+
     fun clearCookies() {
         val email: String? = getAuthEmail()
         email?.let { email ->
@@ -455,7 +462,7 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
         }
 
         // Clear all data in viewModel
-        _contacts.clear()
+        _walletOwners.clear()
         wallets.clear()
         transactions.clear()
     }

@@ -27,7 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.tapgopay.R
-import com.example.tapgopay.remote.Contact
+import com.example.tapgopay.remote.WalletOwner
 import com.example.tapgopay.ui.theme.TapGoPayTheme
 
 val defaultProfilePics = listOf(
@@ -36,8 +36,8 @@ val defaultProfilePics = listOf(
 )
 
 @Composable
-fun ContactCardColumn(
-    contact: Contact,
+fun WalletOwnerCardColumn(
+    walletOwner: WalletOwner,
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -58,15 +58,15 @@ fun ContactCardColumn(
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
             Text(
-                contact.username,
+                walletOwner.username,
                 style = MaterialTheme.typography.titleLarge
             )
             Text(
-                "Account: ${contact.walletAddress}",
+                "Account: ${walletOwner.walletAddress}",
                 style = MaterialTheme.typography.titleMedium,
             )
             Text(
-                "Phone: ${contact.phoneNo}",
+                "Phone: ${walletOwner.phoneNo}",
                 style = MaterialTheme.typography.titleMedium,
             )
         }
@@ -74,8 +74,8 @@ fun ContactCardColumn(
 }
 
 @Composable
-fun ContactCardRow(
-    contact: Contact,
+fun WalletOwnerCardRow(
+    walletOwner: WalletOwner,
     isSelected: Boolean = false,
     onClick: () -> Unit,
 ) {
@@ -83,7 +83,7 @@ fun ContactCardRow(
         if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onPrimary
     val contentColor =
         if (isSelected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.scrim
-    contact.username
+    walletOwner.username
 
     Card(
         colors = CardDefaults.cardColors().copy(
@@ -98,7 +98,7 @@ fun ContactCardRow(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp)
+                .padding(horizontal = 16.dp, vertical = 24.dp),
         ) {
             Box(
                 modifier = Modifier
@@ -122,13 +122,13 @@ fun ContactCardRow(
 
             Column {
                 Text(
-                    contact.username,
+                    walletOwner.username,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Medium,
                     color = contentColor,
                 )
                 Text(
-                    contact.phoneNo,
+                    walletOwner.phoneNo,
                     style = MaterialTheme.typography.titleMedium,
                     color = contentColor,
                 )
@@ -139,28 +139,28 @@ fun ContactCardRow(
 
 @Preview(showBackground = true)
 @Composable
-fun PreviewContactCardColumn() {
-    val contact = Contact(
+fun PreviewWalletOwnerCardColumn() {
+    val walletOwner = WalletOwner(
         username = "Mary Jane",
         walletAddress = "123456789",
         phoneNo = "+254 120811682"
     )
     TapGoPayTheme {
-        ContactCardColumn(contact)
+        WalletOwnerCardColumn(walletOwner)
     }
 }
 
 @Preview(showBackground = true)
 @Composable
-fun PreviewContactCardRow() {
-    val contact = Contact(
+fun PreviewWalletOwnerCardRow() {
+    val walletOwner = WalletOwner(
         username = "Mary Jane",
         walletAddress = "123456789",
         phoneNo = "+254 120811682"
     )
     TapGoPayTheme {
-        ContactCardRow(
-            contact = contact,
+        WalletOwnerCardRow(
+            walletOwner = walletOwner,
             isSelected = false,
             onClick = {},
         )

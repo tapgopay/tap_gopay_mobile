@@ -11,7 +11,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -25,6 +25,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -32,12 +33,17 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SheetState
 import androidx.compose.material3.Text
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -53,15 +59,15 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import com.example.tapgopay.R
 import com.example.tapgopay.data.AppViewModel
+import com.example.tapgopay.data.MAX_WALLET_OWNERS
 import com.example.tapgopay.data.MIN_NAME_LENGTH
 import com.example.tapgopay.data.UIMessage
 import com.example.tapgopay.remote.Wallet
 import com.example.tapgopay.screens.widgets.InputField
-import com.example.tapgopay.screens.widgets.Menu
 import com.example.tapgopay.screens.widgets.MessageBanner
+import com.example.tapgopay.screens.widgets.NumberInput
 import com.example.tapgopay.screens.widgets.Transactions
 import com.example.tapgopay.ui.theme.TapGoPayTheme
 import com.example.tapgopay.ui.theme.successColor
@@ -76,108 +82,135 @@ fun HomeScreen(
     appViewModel: AppViewModel,
     navigateTo: (Routes) -> Unit,
 ) {
-    var displayCreateWalletDialog by remember { mutableStateOf(false) }
+    var displayCreateWalletView by remember { mutableStateOf(false) }
+    val createWalletSheet = rememberModalBottomSheetState()
+    val scope = rememberCoroutineScope()
+    val sideMenuState = rememberDrawerState(DrawerValue.Closed)
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        "Home",
-                        style = MaterialTheme.typography.titleLarge,
-                    )
-                },
-                modifier = Modifier.padding(horizontal = 8.dp),
-                navigationIcon = {
-                    IconButton(
-                        onClick = {
-                            navigateTo(Routes.ProfileScreen)
-                        },
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.person_add_24dp),
-                            contentDescription = "User Profile",
-                            modifier = Modifier.size(32.dp),
-                        )
-                    }
-                },
-                actions = {
-                    Menu(
-                        appViewModel = appViewModel,
-                        navigateTo = navigateTo
-                    )
-                }
-            )
+    ModalNavigationDrawer(
+        drawerContent = {
+            SideMenu(navigateTo = navigateTo)
         },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    displayCreateWalletDialog = true
-                }
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.add_24dp),
-                    contentDescription = "Create Wallet",
-                    modifier = Modifier.size(32.dp),
-                )
-            }
-        }
-    ) { innerPadding ->
-        val transactionsSheetState = rememberModalBottomSheetState()
-        var viewAllTransactions by remember { mutableStateOf(false) }
-        val scope = rememberCoroutineScope()
-
-        val wallets: List<Wallet> = appViewModel.wallets.values.toList()
-
-        LaunchedEffect(Unit) {
-            appViewModel.getAllWallets()
-        }
-
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .padding(horizontal = 8.dp)
-        ) {
-            Column(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-                horizontalAlignment = Alignment.Start,
-            ) {
-                if (wallets.isEmpty()) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 24.dp),
-                        verticalArrangement = Arrangement.spacedBy(20.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
+        drawerState = sideMenuState,
+    ) {
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            topBar = {
+                CenterAlignedTopAppBar(
+                    title = {
                         Text(
-                            "You have zero wallets registered",
+                            "Home",
                             style = MaterialTheme.typography.titleLarge,
-                            textAlign = TextAlign.Center,
                         )
-                        ElevatedButton(
+                    },
+                    modifier = Modifier.padding(horizontal = 8.dp),
+                    navigationIcon = {
+                        IconButton(
                             onClick = {
-                                displayCreateWalletDialog = true
+                                navigateTo(Routes.ProfileScreen)
                             },
-                            colors = ButtonDefaults.elevatedButtonColors().copy(
-                                containerColor = MaterialTheme.colorScheme.primary,
-                                contentColor = MaterialTheme.colorScheme.onPrimary,
-                            )
                         ) {
-                            Text(
-                                "Create Wallet",
-                                style = MaterialTheme.typography.titleLarge,
-                                modifier = Modifier.padding(vertical = 8.dp)
+                            Icon(
+                                painter = painterResource(R.drawable.person_add_24dp),
+                                contentDescription = "User Profile",
+                                modifier = Modifier.size(32.dp),
+                            )
+                        }
+                    },
+                    actions = {
+                        IconButton(
+                            onClick = {
+                                scope.launch {
+                                    sideMenuState.open()
+                                }
+                            }
+                        ) {
+                            Icon(
+                                painter = painterResource(R.drawable.menu_24dp),
+                                contentDescription = "View Menu",
+                                modifier = Modifier.size(32.dp),
                             )
                         }
                     }
-                } else {
+                )
+            },
+            floatingActionButton = {
+                FloatingActionButton(
+                    onClick = {
+                        displayCreateWalletView = true
+                        scope.launch {
+                            createWalletSheet.expand()
+                        }
+                    }
+                ) {
+                    Icon(
+                        painter = painterResource(R.drawable.add_24dp),
+                        contentDescription = "Create Wallet",
+                        modifier = Modifier.size(32.dp),
+                    )
+                }
+            }
+        ) { innerPadding ->
+            val transactionsSheetState = rememberModalBottomSheetState()
+            var viewAllTransactions by remember { mutableStateOf(false) }
+            val scope = rememberCoroutineScope()
+
+            val wallets: List<Wallet> = appViewModel.wallets.values.toList()
+
+            LaunchedEffect(Unit) {
+                appViewModel.getAllWallets()
+            }
+
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .padding(horizontal = 8.dp)
+            ) {
+                Column(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    horizontalAlignment = Alignment.Start,
+                ) {
                     LazyRow(
                         modifier = Modifier.fillMaxWidth(),
                     ) {
+                        item {
+                            if (wallets.isEmpty()) {
+                                Column(
+                                    modifier = Modifier
+                                        .fillParentMaxWidth()
+                                        .padding(vertical = 24.dp),
+                                    verticalArrangement = Arrangement.spacedBy(20.dp),
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                ) {
+                                    Text(
+                                        "You have zero wallets registered",
+                                        style = MaterialTheme.typography.titleLarge,
+                                        textAlign = TextAlign.Center,
+                                    )
+                                    ElevatedButton(
+                                        onClick = {
+                                            displayCreateWalletView = true
+                                            scope.launch {
+                                                createWalletSheet.expand()
+                                            }
+                                        },
+                                        colors = ButtonDefaults.elevatedButtonColors().copy(
+                                            containerColor = MaterialTheme.colorScheme.primary,
+                                            contentColor = MaterialTheme.colorScheme.onPrimary,
+                                        )
+                                    ) {
+                                        Text(
+                                            "Create Wallet",
+                                            style = MaterialTheme.typography.titleLarge,
+                                            modifier = Modifier.padding(vertical = 8.dp)
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
                         itemsIndexed(wallets) { _, wallet ->
                             Box(
                                 modifier = Modifier.fillParentMaxWidth(),
@@ -197,72 +230,77 @@ fun HomeScreen(
                             }
                         }
                     }
-                }
 
-                if (displayCreateWalletDialog) {
-                    CreateWalletDialog(
-                        onDismissRequest = {
-                            displayCreateWalletDialog = false
-                        },
-                        onContinue = { walletName ->
-                            scope.launch {
-                                appViewModel.newWallet(walletName)
+                    if (displayCreateWalletView) {
+                        CreateWalletView(
+                            sheetState = createWalletSheet,
+                            onDismissRequest = {
+                                displayCreateWalletView = false
+                                scope.launch {
+                                    createWalletSheet.hide()
+                                }
+                            },
+                            onContinue = { walletName, totalOwners, numSignatures ->
+                                displayCreateWalletView = false
+                                scope.launch {
+                                    createWalletSheet.hide()
+                                    appViewModel.newWallet(walletName, totalOwners, numSignatures)
+                                }
                             }
-                            displayCreateWalletDialog = false
+                        )
+                    }
+
+                    Transactions(
+                        transactions = appViewModel.transactions,
+                        onViewAllTransactions = {
+                            viewAllTransactions = true
+                            scope.launch {
+                                transactionsSheetState.expand()
+                            }
                         }
                     )
-                }
 
-                Transactions(
-                    transactions = appViewModel.transactions,
-                    onViewAllTransactions = {
-                        viewAllTransactions = true
-                        scope.launch {
-                            transactionsSheetState.expand()
-                        }
-                    }
-                )
-
-                if (viewAllTransactions) {
-                    ModalBottomSheet(
-                        onDismissRequest = {
-                            scope.launch {
-                                transactionsSheetState.hide()
-                                viewAllTransactions = false
-                            }
-                        },
-                        sheetState = transactionsSheetState,
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
+                    if (viewAllTransactions) {
+                        ModalBottomSheet(
+                            onDismissRequest = {
+                                scope.launch {
+                                    transactionsSheetState.hide()
+                                    viewAllTransactions = false
+                                }
+                            },
+                            sheetState = transactionsSheetState,
+                            shape = RoundedCornerShape(12.dp)
                         ) {
-                            Transactions(appViewModel.transactions)
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                            ) {
+                                Transactions(appViewModel.transactions)
+                            }
                         }
                     }
                 }
-            }
 
-            // Message Banner
-            var error by remember { mutableStateOf<UIMessage?>(null) }
+                // Message Banner
+                var error by remember { mutableStateOf<UIMessage?>(null) }
 
-            LaunchedEffect(Unit) {
-                appViewModel.uiMessages.collectLatest { uiMessage ->
-                    error = uiMessage
-                    launch {
-                        delay(5000)  // Hide after n seconds
-                        error = null
+                LaunchedEffect(Unit) {
+                    appViewModel.uiMessages.collectLatest { uiMessage ->
+                        error = uiMessage
+                        launch {
+                            delay(5000)  // Hide after n seconds
+                            error = null
+                        }
                     }
                 }
-            }
 
-            error?.let {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.BottomCenter,
-                ) {
-                    MessageBanner(it)
+                error?.let {
+                    Box(
+                        modifier = Modifier.fillMaxSize(),
+                        contentAlignment = Alignment.BottomCenter,
+                    ) {
+                        MessageBanner(it)
+                    }
                 }
             }
         }
@@ -270,13 +308,71 @@ fun HomeScreen(
 }
 
 @Composable
-fun CreateWalletDialog(
+fun SideMenu(
+    navigateTo: (Routes) -> Unit,
+) {
+    val context = LocalContext.current
+
+    ModalDrawerSheet {
+        Column(
+            modifier = Modifier
+                .padding(24.dp)
+                .fillMaxHeight()
+        ) {
+            SettingsItem(
+                title = "Wallets",
+                subtitle = "Manage all your physical and virtual wallets",
+                iconId = R.drawable.wallet2_24dp,
+                onClick = {
+                    Toast.makeText(context, "Not yet implemented", Toast.LENGTH_SHORT)
+                        .show()
+                }
+            )
+
+            SettingsItem(
+                title = "Device & Credentials",
+                subtitle = "Manage your usernames and passwords",
+                iconId = R.drawable.phone_android_24dp,
+                onClick = {
+                    Toast.makeText(context, "Not yet implemented", Toast.LENGTH_SHORT)
+                        .show()
+                }
+            )
+
+            SettingsItem(
+                title = "Send or Request Money",
+                subtitle = "Send or Request money from family, friends or business clients",
+                iconId = R.drawable.qr_code_24dp,
+                onClick = {
+                    navigateTo(Routes.RequestPaymentScreen)
+                }
+            )
+
+            SettingsItem(
+                title = "Logout",
+                iconId = R.drawable.logout_24dp,
+                onClick = {
+                    Toast.makeText(context, "Not yet implemented", Toast.LENGTH_SHORT)
+                        .show()
+                }
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun CreateWalletView(
+    sheetState: SheetState,
     onDismissRequest: () -> Unit,
-    onContinue: (String) -> Unit,
+    onContinue: (walletName: String, totalOwners: Int, numSignatures: Int) -> Unit,
 ) {
     var walletName by remember { mutableStateOf("") }
+    var totalOwners by remember { mutableIntStateOf(1) }
+    var numSignatures by remember { mutableIntStateOf(1) }
 
-    Dialog(
+    ModalBottomSheet(
+        sheetState = sheetState,
         onDismissRequest = onDismissRequest,
     ) {
         Card(
@@ -302,11 +398,29 @@ fun CreateWalletDialog(
                     label = "Enter wallet name",
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
+                NumberInput(
+                    label = "Enter total number of wallet owners",
+                    value = totalOwners,
+                    onValueChange = {
+                        totalOwners = it
+                    },
+                    min = 1,
+                    max = MAX_WALLET_OWNERS
+                )
+
+                NumberInput(
+                    label = "Enter total number of signatures required to complete transaction",
+                    value = numSignatures,
+                    onValueChange = {
+                        numSignatures = it
+                    },
+                    min = 1,
+                    max = totalOwners
+                )
 
                 ElevatedButton(
                     onClick = {
-                        onContinue(walletName)
+                        onContinue(walletName, totalOwners, numSignatures)
                     },
                     enabled = walletName.length > MIN_NAME_LENGTH,
                     colors = ButtonDefaults.elevatedButtonColors().copy(
@@ -327,6 +441,7 @@ fun CreateWalletDialog(
         }
     }
 }
+
 
 @Composable
 fun ActionButton(

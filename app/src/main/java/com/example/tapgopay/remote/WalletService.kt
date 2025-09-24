@@ -25,10 +25,10 @@ data class Wallet(
     val balance: Double,
 )
 
-data class Contact(
+data class WalletOwner(
     val username: String = "",
-    @SerializedName("wallet_address") val walletAddress: String = "",
     @SerializedName("phone_no") val phoneNo: String = "",
+    @SerializedName("wallet_address") val walletAddress: String = "",
 )
 
 data class TransactionRequest(
@@ -51,8 +51,8 @@ fun TransactionRequest.signPayload(privKey: PrivateKey): ByteArray? {
 
 fun TransactionRequest.asResult(): TransactionResult {
     return TransactionResult(
-        sender = Contact(walletAddress = this.sender),
-        receiver = Contact(walletAddress = this.receiver),
+        sender = WalletOwner(walletAddress = this.sender),
+        receiver = WalletOwner(walletAddress = this.receiver),
         amount = this.amount,
         timestamp = this.timestamp,
         signature = this.signature,
@@ -61,8 +61,8 @@ fun TransactionRequest.asResult(): TransactionResult {
 
 data class TransactionResult(
     @SerializedName("transaction_id") val transactionId: String? = null, // Will be omitted if null
-    val sender: Contact,
-    val receiver: Contact,
+    val sender: WalletOwner,
+    val receiver: WalletOwner,
     val amount: Double,
     @SerializedName("timestamp") val timestamp: String = LocalDateTime.now().toString(),
     var signature: String, // Base64-encoded string
@@ -83,7 +83,9 @@ fun TransactionResult.isIncoming(): Boolean {
 }
 
 data class CreateWalletRequest(
-    @SerializedName("wallet_name") val walletName: String
+    @SerializedName("wallet_name") val walletName: String,
+    @SerializedName("total_owners") val totalOwners: Int,
+    @SerializedName("num_signatures") val numSignatures: Int,
 )
 
 data class TransactionFee(
@@ -109,7 +111,7 @@ interface WalletService {
     suspend fun activateWallet(@Path("wallet_address") walletAddress: String): Response<MessageResponse>
 
     @POST("/transfer-funds")
-    suspend fun transferFunds(@Body req: TransactionRequest): Response<TransactionResult>
+    suspend fun sendMoney(@Body req: TransactionRequest): Response<TransactionResult>
 
     @GET("/all-transaction-fees")
     suspend fun getAllTransactionFees(): Response<List<TransactionFee>>

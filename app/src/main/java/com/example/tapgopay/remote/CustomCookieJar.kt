@@ -8,7 +8,7 @@ import okhttp3.Cookie
 import okhttp3.CookieJar
 import okhttp3.HttpUrl
 
-class CustomCookieJar(private val userId: String, private val context: Context) : CookieJar {
+class CustomCookieJar(userId: String, context: Context) : CookieJar {
     private val sharedPreferences: SharedPreferences =
         context.getSharedPreferences(
             "${MainActivity.SHARED_PREFERENCES}_${userId}",

@@ -64,11 +64,11 @@ import com.example.tapgopay.data.bob
 import com.example.tapgopay.data.charlie
 import com.example.tapgopay.data.diana
 import com.example.tapgopay.data.generateFakeWallet
-import com.example.tapgopay.data.toContact
-import com.example.tapgopay.remote.Contact
+import com.example.tapgopay.data.toWalletOwner
 import com.example.tapgopay.remote.Wallet
+import com.example.tapgopay.remote.WalletOwner
 import com.example.tapgopay.screens.Routes
-import com.example.tapgopay.screens.widgets.ContactCardRow
+import com.example.tapgopay.screens.widgets.WalletOwnerCardRow
 import com.example.tapgopay.ui.theme.TapGoPayTheme
 import kotlinx.coroutines.launch
 
@@ -80,8 +80,8 @@ fun EnterPaymentDetails(
     goBack: () -> Unit,
     onContinue: () -> Unit,
 ) {
-    var displayContactsSheet by remember { mutableStateOf(false) }
-    val contactsSheet = rememberModalBottomSheetState(
+    var displayWalletOwnersSheet by remember { mutableStateOf(false) }
+    val walletOwnersSheet = rememberModalBottomSheetState(
         skipPartiallyExpanded = true,
     )
     val wallets: List<Wallet> = appViewModel.wallets.values.toList()
@@ -152,9 +152,9 @@ fun EnterPaymentDetails(
                             .clip(RoundedCornerShape(12.dp))
                             .background(color = MaterialTheme.colorScheme.surface)
                             .clickable {
-                                displayContactsSheet = true
+                                displayWalletOwnersSheet = true
                                 scope.launch {
-                                    contactsSheet.expand()
+                                    walletOwnersSheet.expand()
                                 }
                             },
                     ) {
@@ -167,12 +167,12 @@ fun EnterPaymentDetails(
                         )
                     }
                 } else {
-                    ContactCardRow(
-                        contact = receiver.toContact(),
+                    WalletOwnerCardRow(
+                        walletOwner = receiver.toWalletOwner(),
                         onClick = {
-                            displayContactsSheet = true
+                            displayWalletOwnersSheet = true
                             scope.launch {
-                                contactsSheet.expand()
+                                walletOwnersSheet.expand()
                             }
                         },
                     )
@@ -319,7 +319,7 @@ fun EnterPaymentDetails(
             ActivityResultContracts.RequestPermission()
         ) { isGranted: Boolean ->
             if (isGranted) {
-                appViewModel.getContacts(context)
+                appViewModel.getWalletOwners(context)
             } else {
                 // Permission denied
                 Toast.makeText(
@@ -331,21 +331,21 @@ fun EnterPaymentDetails(
             }
         }
 
-        if (displayContactsSheet) {
+        if (displayWalletOwnersSheet) {
             ModalBottomSheet(
                 onDismissRequest = {
-                    displayContactsSheet = false
+                    displayWalletOwnersSheet = false
                     scope.launch {
-                        contactsSheet.hide()
+                        walletOwnersSheet.hide()
                     }
                 }
             ) {
                 SelectReceiver(
-                    contacts = appViewModel.contacts,
+                    walletOwners = appViewModel.walletOwners,
                     onSelectReceiver = {
                         appViewModel.setReceiver(it)
                     },
-                    onRefreshContacts = {
+                    onRefreshWalletOwners = {
                         // Check permission to read contacts
                         val permission = ContextCompat.checkSelfPermission(
                             context, Manifest.permission.READ_CONTACTS,
@@ -353,7 +353,7 @@ fun EnterPaymentDetails(
 
                         when (permission) {
                             PackageManager.PERMISSION_GRANTED -> {
-                                appViewModel.getContacts(context)
+                                appViewModel.getWalletOwners(context)
                             }
 
                             else -> {
@@ -471,10 +471,10 @@ fun SelectWallet(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SelectReceiver(
-    contacts: List<Contact>,
-    selectedContact: Contact? = null,
+    walletOwners: List<WalletOwner>,
+    selectedWalletOwner: WalletOwner? = null,
     onSelectReceiver: (Recipient) -> Unit,
-    onRefreshContacts: () -> Unit,
+    onRefreshWalletOwners: () -> Unit,
 ) {
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -487,66 +487,62 @@ fun SelectReceiver(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 12.dp),
+                        .padding(horizontal = 12.dp, vertical = 32.dp),
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text(
-                        "Refresh Contacts",
+                        "Refresh WalletOwners",
                         style = MaterialTheme.typography.titleMedium,
                     )
                     IconButton(
-                        onClick = onRefreshContacts,
+                        onClick = onRefreshWalletOwners,
                     ) {
                         Icon(
                             painter = painterResource(R.drawable.refresh_24dp),
-                            contentDescription = "Refresh Contacts",
+                            contentDescription = "Refresh WalletOwners",
                             modifier = Modifier.size(32.dp),
                         )
                     }
                 }
-            }
-        }
 
-        if (contacts.isEmpty()) {
-            item {
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
+                if (walletOwners.isEmpty()) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Text(
+                            "No WalletOwners Found",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Medium,
+                            textAlign = TextAlign.Center,
+                        )
+                        Image(
+                            painter = painterResource(R.drawable.no_contacts_24dp),
+                            contentDescription = "No WalletOwners Found",
+                            modifier = Modifier.size(256.dp)
+                        )
+                    }
+                } else {
                     Text(
-                        "No Contacts Found",
+                        "Select payment recipient",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Medium,
                         textAlign = TextAlign.Center,
-                    )
-                    Image(
-                        painter = painterResource(R.drawable.no_contacts_24dp),
-                        contentDescription = "No Contacts Found",
-                        modifier = Modifier.size(256.dp)
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 32.dp),
                     )
                 }
             }
-        } else {
-            item {
-                Text(
-                    "Select payment recipient",
-                    style = MaterialTheme.typography.headlineSmall,
-                    fontWeight = FontWeight.Medium,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 24.dp),
-                )
-            }
         }
 
-        itemsIndexed(contacts) { _, contact ->
-            ContactCardRow(
-                contact = contact,
-                isSelected = selectedContact?.username == contact.username,
+        itemsIndexed(walletOwners) { _, walletOwner ->
+            WalletOwnerCardRow(
+                walletOwner = walletOwner,
+                isSelected = selectedWalletOwner?.username == walletOwner.username,
                 onClick = {
                     onSelectReceiver(
-                        Recipient.PhoneNumber(contact.phoneNo)
+                        Recipient.PhoneNumber(walletOwner.phoneNo)
                     )
                 }
             )
@@ -559,11 +555,11 @@ fun SelectReceiver(
 fun PreviewSelectReceiver() {
     TapGoPayTheme {
         SelectReceiver(
-            contacts = listOf(
+            walletOwners = listOf(
                 alice, bob, charlie, diana
             ),
             onSelectReceiver = {},
-            onRefreshContacts = {},
+            onRefreshWalletOwners = {},
         )
     }
 }
@@ -573,9 +569,9 @@ fun PreviewSelectReceiver() {
 fun PreviewEmptySelectReceiver() {
     TapGoPayTheme {
         SelectReceiver(
-            contacts = emptyList(),
+            walletOwners = emptyList(),
             onSelectReceiver = {},
-            onRefreshContacts = {},
+            onRefreshWalletOwners = {},
         )
     }
 }
