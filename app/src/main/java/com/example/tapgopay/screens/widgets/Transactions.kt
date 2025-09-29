@@ -14,9 +14,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -26,6 +28,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -36,9 +39,11 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Devices
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.tapgopay.R
 import com.example.tapgopay.data.generateFakeTransaction
 import com.example.tapgopay.remote.TransactionResult
+import com.example.tapgopay.remote.TransactionStatus
 import com.example.tapgopay.remote.isIncoming
 import com.example.tapgopay.ui.theme.TapGoPayTheme
 import com.example.tapgopay.ui.theme.successColor
@@ -66,6 +71,7 @@ fun Transactions(
                 style = MaterialTheme.typography.titleLarge.copy(
                     fontWeight = FontWeight.Medium,
                 ),
+                modifier = Modifier.padding(12.dp)
             )
 
             onViewAllTransactions?.let {
@@ -109,14 +115,47 @@ fun Transactions(
             }
 
             itemsIndexed(transactions) { index, transaction ->
-                Transaction(transaction)
+                TransactionView(transaction)
             }
         }
     }
 }
 
 @Composable
-fun Transaction(
+fun TransactionIcon(status: TransactionStatus?) {
+    val icon: Int = when (status) {
+        TransactionStatus.PENDING -> R.drawable.hourglass_24dp
+        TransactionStatus.CONFIRMED -> R.drawable.check_24dp
+        TransactionStatus.REJECTED -> R.drawable.close_24dp
+        else -> R.drawable.question_mark_24dp
+    }
+    val backgroundColor: Color = when (status) {
+        TransactionStatus.CONFIRMED -> successColor
+        TransactionStatus.REJECTED -> MaterialTheme.colorScheme.error
+        else -> MaterialTheme.colorScheme.outline
+    }
+
+    Box(
+        modifier = Modifier
+            .size(24.dp)
+            .background(
+                color = backgroundColor,
+                shape = CircleShape
+            ),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            painter = painterResource(icon),
+            contentDescription = "Transaction status",
+            modifier = Modifier.size(12.dp),
+            tint = MaterialTheme.colorScheme.onPrimary,
+        )
+    }
+}
+
+
+@Composable
+fun TransactionView(
     transaction: TransactionResult,
 ) {
     val sender by remember { mutableStateOf(transaction.sender) }
@@ -124,96 +163,119 @@ fun Transaction(
 
     Card(
         colors = CardDefaults.cardColors().copy(
-            containerColor = MaterialTheme.colorScheme.surface,
+            containerColor = MaterialTheme.colorScheme.onPrimary,
         ),
         shape = RoundedCornerShape(12.dp),
         modifier = Modifier
-            .padding(vertical = 8.dp)
-            .clickable { }
+            .padding(12.dp)
+            .clickable { },
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 8.dp,
+        )
     ) {
         Row(
             horizontalArrangement = Arrangement.SpaceBetween,
-            modifier = Modifier.padding(12.dp)
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(24.dp),
         ) {
             Column(
-                modifier = Modifier.weight(0.6f),
+                modifier = Modifier
+                    .weight(0.6f)
+                    .padding(end = 8.dp),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
                 val message = buildAnnotatedString {
                     if (transaction.isIncoming()) {
-                        append("Received money from ")
-                    } else {
-                        append("Sent money to ")
-                    }
-
-                    withStyle(
-                        SpanStyle(fontWeight = FontWeight.SemiBold)
-                    ) {
-                        if (transaction.isIncoming()) {
-                            append(
-                                sender.username.ifEmptyTryDefaults(
-                                    sender.walletAddress,
-                                    sender.phoneNo
-                                )
+                        withStyle(
+                            SpanStyle(
+                                fontWeight = FontWeight.Medium,
+                                fontSize = 20.sp,
                             )
-                        } else {
-                            append(
-                                receiver.username.ifEmptyTryDefaults(
-                                    receiver.walletAddress,
-                                    receiver.phoneNo
-                                )
-                            )
+                        ) {
+                            append("Received ")
                         }
+                        append("money from ")
+                        append(
+                            sender.username.ifEmptyTryDefaults(
+                                sender.walletAddress,
+                                sender.phoneNo
+                            )
+                        )
+                    } else {
+                        withStyle(
+                            SpanStyle(
+                                fontWeight = FontWeight.Medium,
+                                fontSize = 20.sp,
+                            )
+                        ) {
+                            append("Sent ")
+                        }
+                        append("money to ")
+                        append(
+                            receiver.username.ifEmptyTryDefaults(
+                                receiver.walletAddress,
+                                receiver.phoneNo
+                            )
+                        )
                     }
                 }
 
                 Text(
                     message,
-                    style = MaterialTheme.typography.titleLarge,
-                )
-
-                Text(
-                    formatDatetime(transaction.timestamp),
-                    style = MaterialTheme.typography.titleMedium,
-                )
-            }
-
-            val backgroundColor = if (transaction.isIncoming()) {
-                successColor
-            } else {
-                MaterialTheme.colorScheme.error
-            }
-
-            Box(
-                modifier = Modifier
-                    .padding(vertical = 4.dp, horizontal = 8.dp)
-                    .weight(0.4f)
-                    .background(
-                        color = backgroundColor.copy(alpha = 0.2f),
-                        shape = RoundedCornerShape(24.dp),
+                    style = MaterialTheme.typography.titleMedium.copy(
+                        fontWeight = FontWeight.Normal
                     ),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(
-                    "KSH ${formatAmount(transaction.amount)}",
-                    style = MaterialTheme.typography.titleMedium,
-                    color = backgroundColor,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier.padding(vertical = 8.dp)
                 )
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    TransactionIcon(
+                        status = transaction.status
+                    )
+
+                    Text(
+                        formatDatetime(transaction.timestamp),
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                }
             }
+
+            val formattedAmount = buildAnnotatedString {
+                append("KSH ")
+                withStyle(
+                    SpanStyle(
+                        fontWeight = FontWeight.Medium,
+                        fontSize = 20.sp,
+                    )
+                ) {
+                    append(formatAmount(transaction.amount))
+                }
+            }
+
+            Text(
+                formattedAmount,
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.padding(vertical = 8.dp),
+                color = if (transaction.isIncoming()) {
+                    successColor
+                } else {
+                    MaterialTheme.colorScheme.error
+                }
+            )
         }
     }
 }
 
 @Preview(showBackground = true)
 @Composable
-fun PreviewTransactionCard() {
+fun PreviewTransactionView() {
     val transactions = List(10) { generateFakeTransaction() }
     val transaction = transactions.random()
 
     TapGoPayTheme {
-        Transaction(transaction)
+        TransactionView(transaction)
     }
 }
 

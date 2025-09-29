@@ -5,10 +5,8 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -70,32 +68,37 @@ fun SignUpScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 8.dp),
+                        .padding(horizontal = 8.dp, vertical = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
-                        text = "Join TapGoPay today",
+                        text = "Let's get you started",
                         style = MaterialTheme.typography.headlineLarge,
-                        color = MaterialTheme.colorScheme.primary,
-                        modifier = Modifier.padding(end = 24.dp),
                         textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.primary,
                     )
 
                     Text(
-                        text = "Create An Account",
-                        style = MaterialTheme.typography.headlineSmall,
+                        "Create an account to send, receive, and manage money with ease.",
+                        style = MaterialTheme.typography.titleLarge,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.scrim.copy(
+                            alpha = 0.5f
+                        ),
+                        fontWeight = FontWeight.Medium,
                     )
                 }
 
-                Spacer(modifier = Modifier.height(24.dp))
-
                 Column(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp),
                     horizontalAlignment = Alignment.Start,
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     InputField(
-                        label = "Username",
+                        label = "Enter your username",
                         value = authViewModel.username,
                         onValueChange = { value ->
                             authViewModel.username = value
@@ -104,7 +107,7 @@ fun SignUpScreen(
                     )
 
                     InputField(
-                        label = "Email",
+                        label = "Enter your email",
                         value = authViewModel.email,
                         onValueChange = { value ->
                             authViewModel.email = value
@@ -114,7 +117,7 @@ fun SignUpScreen(
                     )
 
                     InputField(
-                        label = "Phone Number",
+                        label = "Enter your phone number",
                         value = authViewModel.phoneNo,
                         onValueChange = { value ->
                             authViewModel.phoneNo = value
@@ -124,7 +127,7 @@ fun SignUpScreen(
                     )
 
                     PasswordField(
-                        label = "Enter 4 Digit Pin",
+                        label = "Enter 4 digit pin",
                         value = authViewModel.pin,
                         onValueChange = { value ->
                             if (value.length > MIN_PIN_LENGTH) {
@@ -138,7 +141,7 @@ fun SignUpScreen(
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(vertical = 12.dp, horizontal = 8.dp),
+                        modifier = Modifier.padding(12.dp),
                     ) {
                         Checkbox(
                             checked = authViewModel.agreedToTerms,

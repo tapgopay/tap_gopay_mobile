@@ -28,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -67,30 +68,39 @@ fun LoginScreen(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(horizontal = 8.dp),
+                        .padding(horizontal = 8.dp, vertical = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
-                        text = "Login",
+                        text = "Welcome back!",
                         style = MaterialTheme.typography.headlineLarge,
+                        textAlign = TextAlign.Center,
                         color = MaterialTheme.colorScheme.primary,
                     )
 
                     Text(
-                        text = "Welcome Back!",
-                        style = MaterialTheme.typography.headlineSmall,
+                        "Sign in securely to manage your money",
+                        style = MaterialTheme.typography.titleLarge,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.scrim.copy(
+                            alpha = 0.5f
+                        ),
+                        fontWeight = FontWeight.Medium,
                     )
                 }
 
                 Spacer(modifier = Modifier.height(32.dp))
 
                 Column(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     InputField(
-                        label = "Email",
+                        label = "Enter your email",
                         value = authViewModel.email,
                         onValueChange = { value ->
                             authViewModel.email = value
@@ -100,7 +110,7 @@ fun LoginScreen(
                     )
 
                     PasswordField(
-                        label = "Enter Your 4 Digit Pin",
+                        label = "Enter your pin",
                         value = authViewModel.pin,
                         onValueChange = { value ->
                             if (value.length > MIN_PIN_LENGTH) {

@@ -13,6 +13,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.tapgopay.data.AppViewModel
 import com.example.tapgopay.remote.NotificationService
+import com.example.tapgopay.screens.CreateWalletScreen
 import com.example.tapgopay.screens.HomeScreen
 import com.example.tapgopay.screens.PaymentScreen
 import com.example.tapgopay.screens.ProfileScreen
@@ -93,20 +94,15 @@ class MainActivity : ComponentActivity() {
                     composable(route = Routes.PaymentScreen.name) {
                         PaymentScreen(
                             appViewModel = appViewModel,
-                            goBack = {
-                                navController.popBackStack()
-                            },
                             navigateTo = { route ->
-                                navController.navigate(route.name)
+                                navController.navigate(route = route.name)
                             }
                         )
                     }
 
-                    composable(route = Routes.ProfileScreen.name) {
-                        ProfileScreen(
-                            navigateTo = { route ->
-                                navController.navigate(route = route.name)
-                            },
+                    composable(route = Routes.CreateWalletScreen.name) {
+                        CreateWalletScreen(
+                            appViewModel = appViewModel,
                             goBack = {
                                 navController.popBackStack()
                             }
@@ -135,6 +131,17 @@ class MainActivity : ComponentActivity() {
                             },
                             navigateTo = { route ->
                                 navController.navigate(route.name)
+                            }
+                        )
+                    }
+
+                    composable(route = Routes.ProfileScreen.name) {
+                        ProfileScreen(
+                            navigateTo = { route ->
+                                navController.navigate(route = route.name)
+                            },
+                            goBack = {
+                                navController.popBackStack()
                             }
                         )
                     }

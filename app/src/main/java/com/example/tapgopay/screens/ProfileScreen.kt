@@ -63,7 +63,7 @@ fun ProfileScreen(
                         onClick = goBack,
                     ) {
                         Icon(
-                            painter = painterResource(R.drawable.baseline_arrow_back_24),
+                            painter = painterResource(R.drawable.chevron_backward_24dp),
                             contentDescription = "Previous Screen",
                             modifier = Modifier.size(32.dp)
                         )
@@ -165,7 +165,7 @@ fun ProfileScreen(
             SettingsItem(
                 title = "Wallets",
                 subtitle = "Manage all your physical and virtual wallets",
-                iconId = R.drawable.wallet2_24dp,
+                iconId = R.drawable.credit_card_24dp,
                 onClick = {
                     Toast.makeText(context, "Not yet implemented", Toast.LENGTH_SHORT)
                         .show()
@@ -175,7 +175,7 @@ fun ProfileScreen(
             SettingsItem(
                 title = "Device & Credentials",
                 subtitle = "Manage your usernames and passwords",
-                iconId = R.drawable.phone_android_24dp,
+                iconId = R.drawable.mobile_24dp,
                 onClick = {
                     Toast.makeText(context, "Not yet implemented", Toast.LENGTH_SHORT)
                         .show()

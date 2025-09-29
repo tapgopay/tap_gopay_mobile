@@ -9,6 +9,7 @@ const val MIN_OTP_LENGTH = 4
 const val MIN_WALLET_ADDR_LENGTH: Int = 12
 const val MAX_WALLET_SIGNATURES: Int = 10
 const val MAX_WALLET_OWNERS: Int = 10
+const val MIN_AMOUNT: Double = 1.0
 
 fun validateUsername(username: String) {
     if (username.length < MIN_NAME_LENGTH) {
