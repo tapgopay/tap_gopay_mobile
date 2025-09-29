@@ -77,7 +77,7 @@ fun ForgotPasswordScreen(
                         },
                     ) {
                         Icon(
-                            painter = painterResource(R.drawable.baseline_arrow_back_24),
+                            painter = painterResource(R.drawable.chevron_backward_24dp),
                             contentDescription = "Back to Login Page",
                             modifier = Modifier.size(32.dp),
                         )

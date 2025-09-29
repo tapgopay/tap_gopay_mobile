@@ -34,6 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.tooling.preview.Devices
@@ -85,9 +86,9 @@ fun ResetPasswordScreen(
                         },
                     ) {
                         Icon(
-                            painter = painterResource(R.drawable.baseline_arrow_back_24),
+                            painter = painterResource(R.drawable.chevron_backward_24dp),
                             contentDescription = "Back to Login Page",
-                            modifier = Modifier.size(48.dp),
+                            modifier = Modifier.size(32.dp),
                         )
                     }
                 },
@@ -190,15 +191,14 @@ fun ResetPasswordScreen(
 
 @Composable
 fun EnterOtpNumber(
-    requiredOtpLength: Int,
     otp: String,
     onNewOtpValue: (String) -> Unit,
+    requiredOtpLength: Int,
+    modifier: Modifier = Modifier,
     resendOtp: () -> Unit,
 ) {
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(12.dp),
+        modifier = modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -218,13 +218,17 @@ fun EnterOtpNumber(
                 "An OTP code has been sent to your email. Enter OTP code to continue",
                 style = MaterialTheme.typography.titleLarge,
                 textAlign = TextAlign.Center,
+                color = MaterialTheme.colorScheme.scrim.copy(
+                    alpha = 0.5f
+                ),
+                fontWeight = FontWeight.Medium,
             )
         }
 
         Column(
             modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.SpaceAround,
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center,
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
@@ -236,29 +240,27 @@ fun EnterOtpNumber(
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     repeat(requiredOtpLength) { index ->
-                        val isColored = index < otp.length
-                        val borderColor =
-                            if (isColored) Color.Transparent else MaterialTheme.colorScheme.scrim
-                        val backgroundColor =
-                            if (isColored) MaterialTheme.colorScheme.primary else Color.Transparent
-
-                        val otpChar: String =
+                        val char: String =
                             otp.toCharArray().getOrNull(index)?.toString() ?: ""
 
                         Box(
                             modifier = Modifier
-                                .border(2.dp, color = borderColor, shape = RoundedCornerShape(8.dp))
-                                .background(
-                                    color = backgroundColor,
-                                    shape = RoundedCornerShape(8.dp)
+                                .border(
+                                    width = 2.dp,
+                                    color = Color.Transparent,
+                                    shape = RoundedCornerShape(24.dp)
                                 )
-                                .size(64.dp),
+                                .background(
+                                    color = MaterialTheme.colorScheme.surfaceContainer,
+                                    shape = RoundedCornerShape(24.dp)
+                                )
+                                .size(72.dp),
                             contentAlignment = Alignment.Center,
                         ) {
                             Text(
-                                otpChar,
-                                style = MaterialTheme.typography.headlineSmall,
-                                color = MaterialTheme.colorScheme.onPrimary,
+                                char,
+                                style = MaterialTheme.typography.headlineMedium,
+                                fontWeight = FontWeight.Medium,
                             )
                         }
                     }
@@ -286,19 +288,6 @@ fun EnterOtpNumber(
                 },
             )
         }
-    }
-}
-
-@Preview(showBackground = true, device = Devices.PIXEL)
-@Composable
-fun PreviewEnterOtpNumber() {
-    TapGoPayTheme {
-        EnterOtpNumber(
-            requiredOtpLength = 4,
-            otp = "123",
-            onNewOtpValue = {},
-            resendOtp = {},
-        )
     }
 }
 

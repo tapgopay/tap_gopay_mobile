@@ -18,12 +18,12 @@ import androidx.lifecycle.application
 import androidx.lifecycle.viewModelScope
 import com.example.tapgopay.MainActivity
 import com.example.tapgopay.remote.Api
+import com.example.tapgopay.remote.Contact
 import com.example.tapgopay.remote.CreateWalletRequest
 import com.example.tapgopay.remote.TransactionFee
 import com.example.tapgopay.remote.TransactionRequest
 import com.example.tapgopay.remote.TransactionResult
 import com.example.tapgopay.remote.Wallet
-import com.example.tapgopay.remote.WalletOwner
 import com.example.tapgopay.remote.asResult
 import com.example.tapgopay.remote.signPayload
 import com.example.tapgopay.utils.extractErrorMessage
@@ -40,20 +40,8 @@ import java.security.KeyPair
 sealed class Recipient {
     abstract val value: String
 
-    data class AccountNumber(override val value: String) : Recipient()
+    data class WalletAddress(override val value: String) : Recipient()
     data class PhoneNumber(override val value: String) : Recipient()
-}
-
-fun Recipient.toWalletOwner(): WalletOwner {
-    return when (this) {
-        is Recipient.PhoneNumber -> {
-            WalletOwner(phoneNo = this.value)
-        }
-
-        is Recipient.AccountNumber -> {
-            WalletOwner(walletAddress = this.value)
-        }
-    }
 }
 
 open class AppViewModel(application: Application) : AndroidViewModel(application) {
@@ -62,10 +50,11 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
         private set
     var amount by mutableDoubleStateOf(0.0)
     var pin by mutableStateOf("")
+    var remarks by mutableStateOf("")
 
-    private var _walletOwners = mutableStateListOf<WalletOwner>()
-    val walletOwners: List<WalletOwner>
-        get() = _walletOwners.toList()
+    private var _contacts = mutableStateListOf<Contact>()
+    val contacts: List<Contact>
+        get() = _contacts.toList()
     var wallets = mutableStateMapOf<String, Wallet>()
         private set
     val transactions = mutableStateListOf<TransactionResult>()
@@ -88,7 +77,7 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun getWalletOwners(context: Context) {
+    fun getContacts(context: Context) {
         val contentResolver = context.contentResolver
         val cursor: Cursor? = contentResolver.query(
             ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
@@ -101,7 +90,7 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
             null
         )
 
-        val newWalletOwners = mutableListOf<WalletOwner>()
+        val contacts = mutableListOf<Contact>()
 
         cursor?.use { it ->
             while (it.moveToNext()) {
@@ -116,19 +105,16 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
                             ContactsContract.CommonDataKinds.Phone.NUMBER
                         )
                     )
-                    val newWalletOwner = WalletOwner(
-                        username = name,
-                        phoneNo = phoneNo,
-                    )
-                    newWalletOwners.add(newWalletOwner)
+                    val contact = Contact(name, phoneNo)
+                    contacts.add(contact)
 
                 } catch (e: IllegalArgumentException) {
-                    Log.d(MainActivity.TAG, "WalletOwner column not found; ${e.message}")
+                    Log.d(MainActivity.TAG, "Error reading contact; ${e.message}")
                 }
             }
         }
 
-        _walletOwners.addAll(newWalletOwners)
+        _contacts.addAll(contacts)
     }
 
     private suspend fun handleException(
@@ -420,7 +406,7 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
                 validatePhoneNumber(newReceiver.value)
             }
 
-            is Recipient.AccountNumber -> {
+            is Recipient.WalletAddress -> {
                 validateWalletAddress(newReceiver.value)
             }
 
@@ -447,7 +433,19 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
         }
     }
 
-    fun clearCookies() {
+    fun clearUiData() {
+        sender = null
+        receiver = null
+        amount = 0.0
+        pin = ""
+        remarks = ""
+
+        _contacts.clear()
+        wallets.clear()
+        transactions.clear()
+    }
+
+    fun logout() {
         val email: String? = getAuthEmail()
         email?.let { email ->
             val usersSharedPrefs = application.getSharedPreferences(
@@ -461,9 +459,6 @@ open class AppViewModel(application: Application) : AndroidViewModel(application
             Log.d(MainActivity.TAG, "Cleared session cookies")
         }
 
-        // Clear all data in viewModel
-        _walletOwners.clear()
-        wallets.clear()
-        transactions.clear()
+        clearUiData()
     }
 }

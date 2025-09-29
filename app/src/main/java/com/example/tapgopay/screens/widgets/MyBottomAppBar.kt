@@ -137,7 +137,7 @@ fun MyBottomAppBar(
                 )
             ) {
                 Icon(
-                    painter = painterResource(R.drawable.wallet_24dp),
+                    painter = painterResource(R.drawable.credit_card_24dp),
                     contentDescription = "View Wallet",
                     modifier = Modifier.size(32.dp)
                 )

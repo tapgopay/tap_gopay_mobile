@@ -6,12 +6,12 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import com.example.tapgopay.R
 
-//val Outfit = FontFamily(
-//    Font(R.font.poppins_regular),
-//    Font(R.font.poppins_medium, weight = FontWeight.Medium),
-//    Font(R.font.poppins_semibold, weight = FontWeight.Medium),
-//    Font(R.font.poppins_bold, weight = FontWeight.Bold),
-//)
+val Poppins = FontFamily(
+    Font(R.font.poppins_regular),
+    Font(R.font.poppins_medium, weight = FontWeight.Medium),
+    Font(R.font.poppins_semibold, weight = FontWeight.Medium),
+    Font(R.font.poppins_bold, weight = FontWeight.Bold),
+)
 
 val Outfit = FontFamily(
     Font(R.font.outfit_regular),

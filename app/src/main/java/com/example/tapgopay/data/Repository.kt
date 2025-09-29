@@ -1,6 +1,8 @@
 package com.example.tapgopay.data
 
+import com.example.tapgopay.R
 import com.example.tapgopay.remote.TransactionResult
+import com.example.tapgopay.remote.TransactionStatus
 import com.example.tapgopay.remote.Wallet
 import com.example.tapgopay.remote.WalletOwner
 import java.time.LocalDateTime
@@ -19,10 +21,14 @@ fun generateRandomTransactionId(): String {
 }
 
 // Alice will act as the current account holder
-val alice = WalletOwner("Alice", "+254700111111")
-val bob = WalletOwner("Bob", "12345678910", "+254700222222")
-val charlie = WalletOwner("Charlie", "12345678910", "+254700333333")
-val diana = WalletOwner("Diana", "12345678910", "+254700444444")
+val usernames = listOf("Alice", "Bob", "Charlie", "Diana", "Edward")
+
+val alice = WalletOwner(username = "Alice", phoneNo = "+254700111111")
+val bob = WalletOwner(username = "Bob", walletAddress = "12345678910", phoneNo = "+254700222222")
+val charlie =
+    WalletOwner(username = "Charlie", walletAddress = "12345678910", phoneNo = "+254700333333")
+val diana =
+    WalletOwner(username = "Diana", walletAddress = "12345678910", phoneNo = "+254700444444")
 
 fun generateFakeTransaction(): TransactionResult {
     val walletOwners = mutableListOf<WalletOwner>(alice, bob, charlie, diana)
@@ -34,9 +40,13 @@ fun generateFakeTransaction(): TransactionResult {
         alice
     }
 
-    val amount = Random.nextDouble() * Random.nextInt(1000)
-    val success = Random.nextBoolean()
-    val transactionId: String? = if (success) generateRandomTransactionId() else null
+    val amount = Random.nextDouble() * Random.nextInt(100)
+    val status = listOf(TransactionStatus.CONFIRMED, TransactionStatus.PENDING).random()
+    val transactionCode: String? = if (status == TransactionStatus.CONFIRMED) {
+        generateRandomTransactionId()
+    } else {
+        null
+    }
 
     val randomDays = Random.nextInt(365 * 2)
     var timestamp = LocalDateTime.now().minusDays(randomDays.toLong())
@@ -44,20 +54,27 @@ fun generateFakeTransaction(): TransactionResult {
     timestamp = timestamp.plusHours(randomHours.toLong())
 
     return TransactionResult(
-        transactionId = transactionId,
+        transactionCode = transactionCode,
         sender = sender,
         receiver = receiver,
         amount = amount,
+        fee = Random.nextDouble() * amount,
+        status = status,
         timestamp = timestamp.toString(),
-        signature = "",
     )
 }
 
+fun generateWalletAddress(): String {
+    val walletAddress = List(12) { ('0'..'9').random() }
+        .chunked(4) { it.joinToString("") }              // Groups of 4 into string
+        .joinToString(" ")
+    return walletAddress
+}
+
 fun generateFakeWallet(id: Int): Wallet {
-    val usernames = listOf("alice", "bob", "charlie", "diana", "edward")
     val username = usernames.random()
     val phoneNo = "+2547${Random.nextInt(1000000, 9999999)}"
-    val walletAddress = "0x" + List(16) { "0123456789abcdef".random() }.joinToString("")
+    val walletAddress = generateWalletAddress()
     val walletName = List(8) { "abcdefghijklmnopqrstuvwxyz".random() }.joinToString("")
     val initialDeposit = Random.nextDouble(100.0, 5000.0)
     val isActive = Random.nextBoolean()
@@ -75,4 +92,12 @@ fun generateFakeWallet(id: Int): Wallet {
         createdAt = timestamp,
         balance = balance,
     )
+}
+
+fun randomProfilePic(): Int {
+    val profilePics = listOf(
+        R.drawable.man, R.drawable.man_2,
+        R.drawable.woman, R.drawable.woman_2,
+    )
+    return profilePics.random()
 }

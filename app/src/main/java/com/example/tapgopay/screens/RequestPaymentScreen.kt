@@ -73,7 +73,7 @@ fun RequestPaymentScreen(
                         modifier = Modifier.size(24.dp),
                     ) {
                         Icon(
-                            painter = painterResource(R.drawable.close_24dp),
+                            painter = painterResource(R.drawable.chevron_backward_24dp),
                             contentDescription = "Go Back",
                             modifier = Modifier.size(32.dp)
                         )

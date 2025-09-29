@@ -17,6 +17,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldColors
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -25,7 +26,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -40,12 +40,21 @@ import com.example.tapgopay.ui.theme.TapGoPayTheme
 
 
 @Composable
-fun textFieldColors() = TextFieldDefaults.colors().copy(
+fun defaultTextFieldColors() = TextFieldDefaults.colors().copy(
+    focusedIndicatorColor = MaterialTheme.colorScheme.surfaceContainer,
+    unfocusedIndicatorColor = MaterialTheme.colorScheme.surfaceContainer,
+    disabledIndicatorColor = MaterialTheme.colorScheme.surfaceContainer,
+    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+)
+
+@Composable
+fun transparentTextFieldColors() = TextFieldDefaults.colors().copy(
     focusedIndicatorColor = Color.Transparent,
     unfocusedIndicatorColor = Color.Transparent,
     disabledIndicatorColor = Color.Transparent,
-    focusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceContainer,
+    focusedContainerColor = Color.Transparent,
+    unfocusedContainerColor = Color.Transparent,
 )
 
 @Composable
@@ -53,87 +62,83 @@ fun InputField(
     value: String,
     onValueChange: (String) -> Unit,
     label: String,
+    modifier: Modifier = Modifier,
+    colors: TextFieldColors = defaultTextFieldColors(),
     @DrawableRes leadingIconId: Int? = null,
     keyboardType: KeyboardType = KeyboardType.Text,
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp),
-    ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.titleLarge,
-        )
-
-        TextField(
-            value = value,
-            onValueChange = onValueChange,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(64.dp)
-                .shadow(elevation = 8.dp, shape = RoundedCornerShape(8.dp)),
-            textStyle = MaterialTheme.typography.titleLarge,
-            leadingIcon = {
-                // Display leading icon if leadingIconId is not null
-                leadingIconId?.let {
-                    Icon(
-                        painter = painterResource(leadingIconId),
-                        contentDescription = null,
-                    )
-                }
-            },
-            keyboardOptions = KeyboardOptions.Default.copy(
-                keyboardType = keyboardType
-            ),
-            shape = RoundedCornerShape(8.dp),
-            singleLine = true,
-            colors = textFieldColors()
-        )
-
-    }
+    TextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = modifier
+            .height(64.dp),
+        textStyle = MaterialTheme.typography.titleMedium,
+        leadingIcon = {
+            // Display leading icon if leadingIconId is not null
+            leadingIconId?.let {
+                Icon(
+                    painter = painterResource(leadingIconId),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(32.dp),
+                )
+            }
+        },
+        placeholder = {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.titleMedium,
+            )
+        },
+        keyboardOptions = KeyboardOptions.Default.copy(
+            keyboardType = keyboardType
+        ),
+        shape = RoundedCornerShape(8.dp),
+        singleLine = true,
+        colors = colors,
+    )
 }
 
 @Composable
 fun PasswordField(
-    label: String,
     value: String,
     onValueChange: (String) -> Unit,
+    label: String,
     onForgotPassword: (() -> Unit)? = null,
 ) {
     var passwordVisible: Boolean by remember { mutableStateOf(false) }
 
     Column(
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 12.dp),
+            .fillMaxWidth(),
     ) {
-        Text(
-            text = label,
-            style = MaterialTheme.typography.titleLarge,
-        )
-
         TextField(
             value = value,
             onValueChange = onValueChange,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(64.dp)
-                .shadow(elevation = 8.dp, shape = RoundedCornerShape(8.dp)),
-            textStyle = MaterialTheme.typography.titleLarge,
+                .height(64.dp),
+            textStyle = MaterialTheme.typography.titleMedium,
             leadingIcon = {
                 Icon(
                     painter = painterResource(R.drawable.lock_24dp),
                     contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(32.dp),
+                )
+            },
+            placeholder = {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.titleMedium,
                 )
             },
             trailingIcon = {
                 val trailingIconId: Int = if (passwordVisible) {
-                    R.drawable.visibility_off
+                    R.drawable.visibility_off_24dp
                 } else {
-                    R.drawable.visibility
+                    R.drawable.visibility_24dp
                 }
 
                 IconButton(onClick = { passwordVisible = !passwordVisible }) {
@@ -141,6 +146,7 @@ fun PasswordField(
                         painter = painterResource(id = trailingIconId),
                         contentDescription = "display password",
                         tint = MaterialTheme.colorScheme.surfaceTint,
+                        modifier = Modifier.size(32.dp),
                     )
                 }
             },
@@ -150,7 +156,7 @@ fun PasswordField(
             ),
             shape = RoundedCornerShape(8.dp),
             singleLine = true,
-            colors = textFieldColors(),
+            colors = defaultTextFieldColors(),
         )
 
         onForgotPassword?.let {
@@ -174,26 +180,26 @@ fun PasswordField(
 }
 
 @Composable
-fun NumberInput(
+fun NumberInputColumn(
     label: String,
     value: Int,
     onValueChange: (Int) -> Unit,
+    modifier: Modifier = Modifier,
     min: Int = Int.MIN_VALUE,
     max: Int = Int.MAX_VALUE,
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = modifier,
+        verticalArrangement = Arrangement.spacedBy(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text(
             label,
-            style = MaterialTheme.typography.titleLarge,
+            style = MaterialTheme.typography.titleMedium,
             textAlign = TextAlign.Center,
         )
 
         Row(
-            modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -203,21 +209,21 @@ fun NumberInput(
                 },
                 enabled = value > min,
                 colors = IconButtonDefaults.iconButtonColors().copy(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    contentColor = MaterialTheme.colorScheme.primary,
                 ),
             ) {
                 Icon(
                     painter = painterResource(R.drawable.remove_24dp),
                     contentDescription = null,
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier.size(24.dp)
                 )
             }
 
             Text(
                 "$value",
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(horizontal = 12.dp)
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.padding(horizontal = 32.dp)
             )
 
             IconButton(
@@ -225,15 +231,15 @@ fun NumberInput(
                     onValueChange(value + 1)
                 },
                 colors = IconButtonDefaults.iconButtonColors().copy(
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                    containerColor = MaterialTheme.colorScheme.surfaceContainer,
+                    contentColor = MaterialTheme.colorScheme.primary,
                 ),
                 enabled = value < max,
             ) {
                 Icon(
                     painter = painterResource(R.drawable.add_24dp),
                     contentDescription = null,
-                    modifier = Modifier.size(32.dp)
+                    modifier = Modifier.size(24.dp)
                 )
             }
         }
@@ -249,6 +255,20 @@ fun PreviewInputField() {
             leadingIconId = R.drawable.person_24dp,
             value = "John Doe",
             onValueChange = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+fun PreviewNumberInput() {
+    TapGoPayTheme {
+        NumberInputColumn(
+            label = "Enter number",
+            value = 4,
+            onValueChange = {},
+            min = 0,
+            max = 10
         )
     }
 }
